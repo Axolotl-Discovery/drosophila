@@ -199,7 +199,9 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .rnode.neu span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rnode.neu small{color:var(--t3);font-weight:500}
 .rnode.empty{border-style:dashed;color:var(--t3)}
-select.rnode{padding:0 8px;width:auto;height:36px}
+select.rnode{padding:0 8px;width:auto;height:36px;max-width:122px;flex:none}
+.rnode.neu{min-width:84px}
+.recipe .rrow{gap:4px}
 .rarr{color:var(--t3);display:inline-flex}
 .rstate{width:34px;height:34px;border-radius:50%;border:2px solid var(--border-strong);display:grid;place-items:center;flex:none;color:var(--t3);transition:all .2s}
 .rstate.on{border-color:var(--lc);background:var(--lc);color:#fff;box-shadow:0 0 0 4px color-mix(in srgb,var(--lc) 22%,transparent);animation:breathe 1.4s infinite}
