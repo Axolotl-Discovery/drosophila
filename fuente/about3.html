@@ -1,0 +1,11 @@
+<p class="help"><b>Qué se simula.</b> Las 138 639 neuronas del cerebro adulto de una mosca hembra y sus 15 091 983 conexiones (pares de neuronas, con su número de sinapsis), tomadas del conectoma FlyWire v783 (Dorkenwald y col.; Schlegel y col., <i>Nature</i>, 2024). El signo de cada conexión (excitatoria o inhibitoria) sale del neurotransmisor predicho por FlyWire.</p>
+<p class="help"><b>Modelo.</b> Réplica en JavaScript del modelo de integración y disparo con fuga de Shiu y col. (<i>Nature</i>, 2024), con sus mismos parámetros: potencial de reposo −52 mV, umbral −45 mV, constante de membrana 20 ms, sinapsis de 5 ms, refractario 2,2 ms, retardo de 1,8 ms, 0,275 mV por sinapsis y paso de 0,1 ms. Los estímulos son trenes de Poisson sobre neuronas sensoriales reales. Validé el motor contra el código original en Brian2: dan el mismo resultado (por ejemplo, azúcar → MN9 a 40–70 Hz).</p>
+<p class="help"><b>De neuronas a conducta.</b> La conducta se decide leyendo neuronas de salida identificadas: fibra gigante (DNp01) → escape; DNg11 (aDN) → acicalamiento; MN9 → probóscide; MDN → caminar hacia atrás; DNa02, DNa01 y P9 (DNp09) de cada lado → caminar y girar. El decodificador y la animación de la mosca son lo único que no viene del conectoma.</p>
+<p class="help"><b>Límites honestos.</b></p>
+<ul class="help" style="margin-top:-4px">
+<li>Es el cerebro de una hembra: no existen los circuitos del canto de cortejo del macho.</li>
+<li>No incluye el cordón nervioso ventral (MANC no forma parte de este modelo), así que las patas y las alas se animan a partir de las neuronas descendentes.</li>
+<li>Cualquier entrada olfativa dispara una hiperactividad autosostenida, propia del modelo publicado (también ocurre en Brian2).</li>
+<li>La luz no produce conducta: la retina usa potenciales graduados, que un modelo de espigas no captura.</li>
+<li>La simulación puede ir más lenta que el tiempo real cuando hay mucha actividad. La mosca se mueve en tiempo simulado, a cámara lenta si hace falta.</li>
+</ul>

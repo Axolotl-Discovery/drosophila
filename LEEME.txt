@@ -1,0 +1,28 @@
+DROSOPHILA — Simulador del conectoma completo de la mosca de la fruta
+Axolotl Discovery
+
+CÓMO ABRIRLO
+1. Descomprime toda la carpeta (no lo ejecutes desde dentro del .zip).
+2. Doble clic en Drosophila.exe.
+3. Si Windows muestra "Windows protegió su PC", pulsa "Más información" y luego "Ejecutar de todas formas"
+   (la app no está firmada digitalmente).
+
+REQUISITOS
+Windows 10/11 de 64 bits, 8 GB de RAM (recomendado 16 GB) y un procesador moderno.
+No necesita internet. La simulación usa un núcleo de CPU al máximo; con mucha actividad puede ir
+más lenta que el tiempo real (la velocidad se muestra en el panel "Simulación").
+
+COMPETENCIA EN CLASE (hasta 10 equipos, misma red WiFi)
+Organizador (la compu conectada al proyector):
+1. Abre Drosophila → menú ⋯ → Competencia → "Organizar". Se abre el tablero en otra ventana.
+2. La primera vez Windows pregunta por el Firewall: marca "Redes privadas" y pulsa "Permitir acceso".
+   Si tu WiFi está marcada como "Pública", márcala también o cambia la red a privada; si no, los equipos no te verán.
+3. En el tablero elige los retos, el tiempo por reto y las penalizaciones. Cuando estén todos, pulsa "Iniciar".
+4. Al terminar, "Exportar" guarda clasificacion.csv, eventos.csv y competencia.json en
+   Documentos\Drosophila-competencias (también se guarda un registro continuo .jsonl desde el inicio).
+Equipos:
+1. Abre Drosophila → menú ⋯ → Competencia. La sala aparece sola; si no, escribe la dirección que muestra el tablero.
+2. Pon el nombre del equipo y pulsa "Unirse". Si la app se cierra, al volver a abrirla se reconecta y sigue donde iba.
+Proyector o celulares: cualquier navegador en la misma red puede ver la clasificación abriendo la dirección del tablero.
+Si nadie encuentra la sala: algunas redes escolares aíslan a los dispositivos entre sí. Usa un router propio o
+el punto de acceso de un celular.

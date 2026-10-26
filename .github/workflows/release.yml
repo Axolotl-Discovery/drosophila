@@ -1,0 +1,51 @@
+name: Publicar versión para Windows
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Etiqueta de la versión (ej. v4.1.0)'
+        required: true
+
+permissions:
+  contents: write
+
+env:
+  ELECTRON_VERSION: '31.7.7'
+
+jobs:
+  windows:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Descargar Electron para Windows
+        run: |
+          curl -fsSL -o electron.zip "https://github.com/electron/electron/releases/download/v${ELECTRON_VERSION}/electron-v${ELECTRON_VERSION}-win32-x64.zip"
+          mkdir Drosophila && unzip -q electron.zip -d Drosophila
+
+      - name: Armar la app
+        run: |
+          cd Drosophila
+          mv electron.exe Drosophila.exe
+          rm -f resources/default_app.asar
+          cp -r ../app resources/app
+          cp ../LEEME.txt .
+          cd ..
+          zip -qr -9 Drosophila-win64.zip Drosophila
+          unzip -tq Drosophila-win64.zip
+          ls -l Drosophila-win64.zip
+
+      - name: Publicar en Releases
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.event.inputs.tag || github.ref_name }}
+        run: |
+          VER=$(node -p "require('./app/package.json').version")
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" Drosophila-win64.zip --clobber
+          else
+            gh release create "$TAG" Drosophila-win64.zip --title "Drosophila $VER" --notes-file NOTAS.md
+          fi

@@ -1,0 +1,7 @@
+app/data/*.u32 binary
+app/data/*.i32 binary
+app/data/*.i16 binary
+app/data/*.u16 binary
+app/data/*.u8 binary
+app/data/*.f32 binary
+*.woff2 binary

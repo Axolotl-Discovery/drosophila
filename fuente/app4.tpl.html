@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Drosophila — Axolotl Discovery</title>
+<script>try{const t=localStorage.getItem('drosophila-theme')||'auto';const d=t==='dark'||(t==='auto'&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.dataset.theme=d?'dark':'light';}catch(e){}</script>
+<script src="three.min.js"></script>
+<script src="OrbitControls.js"></script>
+<style>
+/*LOGO*/
+/*CSS*/
+</style>
+</head>
+<body>
+/*ICONS*/
+<div class="loading" id="loading"><div class="box">
+  <span class="mark" aria-hidden="true"></span>
+  <h1>Drosophila</h1>
+  <p>Cargando el cerebro de la mosca…</p>
+  <div class="progress"><i id="ldBar"></i></div><small id="ldMsg">&nbsp;</small>
+</div></div>
+
+<div class="app">
+  <header class="top">
+    <div class="brand"><span class="mark" aria-hidden="true"></span>Drosophila</div>
+    <div class="seg" role="tablist" id="nav" style="margin-left:18px">
+      <button data-p="learn" aria-selected="true"><svg class="i sm"><use href="#i-graduation-cap"/></svg>Aprender</button>
+      <button data-p="lab" aria-selected="false"><svg class="i sm"><use href="#i-flask-conical"/></svg>Laboratorio</button>
+    </div>
+    <div class="simctl" style="margin-left:10px">
+      <button class="ibtn" id="pauseBtn" title="Pausar (Espacio)"><svg class="i sm"><use href="#i-pause"/></svg></button>
+      <button class="rd" id="simBtn" title="Simulación"><b id="sSpeed">—</b><span id="sT">0,0 s</span></button>
+    </div>
+    <div class="sp"></div>
+    <div class="stats" id="stats">
+      <span class="stat" title="Racha de días"><svg class="i sm"><use href="#i-flame"/></svg><span id="stStreak">0</span></span>
+      <span class="stat xp" title="Experiencia"><svg class="i sm"><use href="#i-star"/></svg><span id="stXP">0</span></span>
+    </div>
+    <button class="compchip" id="compChip" hidden></button>
+    <button class="ibtn" id="conBtn" title="Consola ( ` )"><svg class="i"><use href="#i-square-terminal"/></svg></button>
+    <button class="ibtn" id="themeBtn" title="Tema"><svg class="i"><use href="#i-moon"/></svg></button>
+    <button class="ibtn" id="menuBtn" title="Más"><svg class="i"><use href="#i-ellipsis"/></svg></button>
+    <div class="popover" id="simPop" hidden>
+      <div class="kv"><span>Velocidad</span><b id="pSpeed">—</b></div>
+      <div class="kv"><span>Tiempo simulado</span><b id="pT">0 s</b></div>
+      <div class="kv"><span>Neuronas activas</span><b id="sAct">0</b></div>
+      <div class="kv"><span>Espigas</span><b id="sSpk">0</b></div>
+      <div class="seg sm" style="margin:10px 0 8px;width:100%" id="capSeg"><button data-cap="1" aria-selected="true" style="flex:1">Tiempo real</button><button data-cap="100" aria-selected="false" style="flex:1">Máxima</button></div>
+      <button class="btn btn-secondary sm" id="resetBtn" style="width:100%"><svg class="i sm"><use href="#i-rotate-ccw"/></svg>Reiniciar actividad</button>
+      <p class="muted" style="font-size:12.5px;line-height:1.45;margin:10px 0 0">Si hay mucha actividad, la mosca va a cámara lenta.</p>
+    </div>
+    <div class="menu" id="menu" hidden>
+      <button id="mAbout"><svg class="i sm"><use href="#i-info"/></svg>Acerca del modelo</button>
+      <button id="mComp"><svg class="i sm"><use href="#i-trophy"/></svg>Competencia</button>
+      <button id="mKeys"><svg class="i sm"><use href="#i-square-terminal"/></svg>Atajos de teclado</button>
+      <hr><button id="mReset" style="color:var(--err)"><svg class="i sm"><use href="#i-trash-2"/></svg>Borrar progreso</button>
+    </div>
+  </header>
+
+  <main class="stage" id="stage">
+    <canvas id="arenaCv" aria-label="Arena 3D con la mosca"></canvas>
+    <div class="pill rest" id="pill"><div class="bn"><span id="bIcon"></span><span id="bName">En reposo</span></div><div class="chain" id="chain"></div><div class="why" id="why" hidden></div></div>
+    <div class="hud-r">
+      <div class="hudbtns">
+        <button class="ibtn" id="camFollow" aria-pressed="false" title="Seguir a la mosca"><svg class="i"><use href="#i-video"/></svg></button>
+        <button class="ibtn" id="camReset" title="Centrar vista"><svg class="i"><use href="#i-crosshair"/></svg></button>
+        <button class="ibtn" id="pipToggle" aria-pressed="true" title="Cerebro"><svg class="i"><use href="#i-brain"/></svg></button>
+      </div>
+      <div class="pip" id="pip">
+        <canvas id="cloudCv"></canvas>
+        <div class="ph"><span>Cerebro</span><span class="sp"></span>
+          <button class="ibtn" id="cloudView" title="Colorear por clase"><svg class="i sm"><use href="#i-eye"/></svg></button>
+          <button class="ibtn" id="pipBig" title="Ampliar"><svg class="i sm"><use href="#i-maximize-2"/></svg></button></div>
+      </div>
+    </div>
+    <div class="hint" id="hint" style="opacity:0"></div>
+    <div class="alert" id="banner" hidden><svg class="i sm"><use href="#i-zap"/></svg><span id="bannerTxt">Hiperactividad: el modelo se saturó.</span><button class="btn btn-secondary sm" id="bannerReset">Reiniciar</button></div>
+    <div class="dock" id="dock" role="toolbar" aria-label="Estímulos"></div>
+    <div class="pop" id="pop" hidden>
+      <h5 id="popT"></h5>
+      <div class="lbl"><span>Intensidad</span><output id="popO">60%</output></div>
+      <input type="range" id="popInt" min="5" max="100" step="5" value="60">
+      <div class="row"><span class="muted" style="font-size:12.5px">Arrastra para mover</span><button class="btn btn-ghost sm" id="popDel"><svg class="i sm"><use href="#i-trash-2"/></svg>Quitar</button></div>
+    </div>
+    <div id="confetti"></div>
+    <div class="clb" id="clb" hidden></div><div class="cbig" id="cbig" hidden></div><div class="cmsg" id="cmsg" hidden></div>
+    <div class="toast" id="win" hidden><div class="wic"><svg class="i lg"><use href="#i-trophy"/></svg></div><h3 id="winT">¡Lo lograste!</h3><div class="wxp" id="winXP">+20 XP</div><p id="winEx"></p><button class="btn btn-ok lg" id="winOk" style="width:100%">Continuar</button></div>
+  </main>
+
+  <aside class="panel" id="panel">
+    <div class="pscroll" data-p="learn" id="learnBody"></div>
+    <div class="pscroll" data-p="lab" id="labWrap" hidden><div id="chCard"></div><div id="labBody"></div></div>
+    <div class="lightbar" id="lightbar" hidden></div>
+    <div class="sheet" id="picker" hidden>
+      <div class="shead"><div class="r1"><b>Elegir neuronas</b><button class="ibtn" id="pkClose"><svg class="i"><use href="#i-x"/></svg></button></div>
+        <div class="searchbox"><svg class="i sm"><use href="#i-search"/></svg><input type="text" id="pkQ" placeholder="Busca: MN9, azúcar, escape…"></div>
+        <div class="rrow" style="justify-content:space-between"><div class="fchips" id="pkF"></div>
+          <div class="seg sm" id="pkSide"><button data-s="" aria-selected="true">Ambos</button><button data-s="L" aria-selected="false">Izq</button><button data-s="R" aria-selected="false">Der</button></div></div></div>
+      <div class="slist" id="pkList"></div>
+    </div>
+    <div class="lesson" id="lesson" hidden>
+      <div class="lhead"><button class="ibtn" id="lsClose"><svg class="i"><use href="#i-x"/></svg></button><div class="progress"><i id="lsBar"></i></div></div>
+      <div class="lbody" id="lsBody"></div>
+    </div>
+  </aside>
+
+  <section class="drawer" id="drawer">
+    <div class="dtabs">
+      <button class="dtab" data-d="con" aria-selected="false"><svg class="i sm"><use href="#i-square-terminal"/></svg>Consola <kbd>`</kbd></button>
+      <button class="dtab" data-d="proto" aria-selected="false"><svg class="i sm"><use href="#i-file-text"/></svg>Protocolos</button>
+      <button class="dtab" data-d="act" aria-selected="false"><svg class="i sm"><use href="#i-activity"/></svg>Neuronas</button>
+      <button class="dtab" data-d="etho" aria-selected="false"><svg class="i sm"><use href="#i-list-checks"/></svg>Etograma</button>
+      <span style="flex:1"></span>
+      <button class="ibtn" id="drawerToggle" title="Abrir / cerrar"><svg class="i sm"><use href="#i-chevron-down"/></svg></button>
+    </div>
+    <div class="dbody" id="dbody"><div class="dgrip" id="dgrip"></div>
+      <div class="dpane" data-d="con" style="padding:0"><div class="con" id="con">
+        <div style="display:flex;flex-direction:column;min-height:0;position:relative"><div class="out" id="conOut"></div>
+          <div class="inrow"><div class="sig" id="conSig"></div><div class="ac" id="conAC" hidden></div><span class="pr">mosca ›</span><div style="position:relative;flex:1"><span class="ghost" id="conGhost"></span><input id="conIn" spellcheck="false" autocomplete="off" placeholder="escribe ayuda y pulsa Enter"></div></div></div>
+        <div class="side"><h6>Registro en vivo</h6><div id="conWatch"><div class="dim" style="font-size:12px">Usa <span class="cmd">registrar MN9</span></div></div></div>
+      </div></div>
+      <div class="dpane" data-d="proto" hidden style="padding:0"><div class="proto">
+        <div class="plist" id="pList"></div>
+        <div class="ped"><div class="pbar"><input type="text" id="pName" placeholder="nombre del protocolo"><button class="btn btn-secondary sm" id="pSave"><svg class="i sm"><use href="#i-save"/></svg>Guardar</button><button class="btn btn-primary sm" id="pRun"><svg class="i sm"><use href="#i-play"/></svg>Ejecutar</button></div>
+          <textarea id="pText" spellcheck="false"></textarea></div></div></div>
+      <div class="dpane" data-d="act" hidden><canvas id="traceCv"></canvas></div>
+      <div class="dpane" data-d="etho" hidden><canvas id="ethoCv"></canvas></div>
+    </div>
+  </section>
+</div>
+<div id="tip"></div>
+<div class="cdlg" id="cdlg" hidden><div class="box" id="cbox"></div></div>
+<div class="about" id="about" hidden><div class="box">/*ABOUT*/<div style="text-align:right;margin-top:14px"><button class="btn btn-primary" id="aboutOk">Cerrar</button></div></div></div>
+<script src="arena3d.js"></script>
+<script src="app.js"></script>
+<script src="lab.js"></script>
+<script src="learn.js"></script>
+<script src="console.js"></script>
+<script src="comp.js"></script>
+</body>
+</html>

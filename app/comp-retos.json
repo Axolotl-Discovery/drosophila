@@ -1,0 +1,128 @@
+[
+{
+"id": "r1",
+"title": "Hambre de luz",
+"ic": "utensils",
+"col": "#0E7C74",
+"diff": "fácil",
+"def": true,
+"sub": "Probóscide sin azúcar"
+},
+{
+"id": "r2",
+"title": "Botón de escape",
+"ic": "zap",
+"col": "#0E7C74",
+"diff": "fácil",
+"def": true,
+"sub": "Escape sin sombra"
+},
+{
+"id": "r3",
+"title": "Moonwalk",
+"ic": "undo-2",
+"col": "#0E7C74",
+"diff": "fácil",
+"def": true,
+"sub": "Caminar hacia atrás"
+},
+{
+"id": "r4",
+"title": "Valiente",
+"ic": "zap-off",
+"col": "#6A4FC9",
+"diff": "medio",
+"def": true,
+"sub": "No escapar de 2 sombras"
+},
+{
+"id": "r5",
+"title": "Antenas sucias",
+"ic": "sparkles",
+"col": "#6A4FC9",
+"diff": "medio",
+"def": false,
+"sub": "No acicalarse"
+},
+{
+"id": "r6",
+"title": "Ayuno",
+"ic": "candy",
+"col": "#6A4FC9",
+"diff": "medio",
+"def": true,
+"sub": "No comer sobre azúcar"
+},
+{
+"id": "r7",
+"title": "Sabor fantasma",
+"ic": "utensils",
+"col": "#D08A1E",
+"diff": "medio",
+"def": true,
+"sub": "Probóscide con sensoriales"
+},
+{
+"id": "r8",
+"title": "Cosquillas de luz",
+"ic": "feather",
+"col": "#D08A1E",
+"diff": "difícil",
+"def": false,
+"sub": "Acicalarse con sensoriales"
+},
+{
+"id": "r9",
+"title": "Sombra imaginaria",
+"ic": "cloud-moon",
+"col": "#D08A1E",
+"diff": "medio",
+"def": true,
+"sub": "Escape con neuronas visuales"
+},
+{
+"id": "r10",
+"title": "Gira a la derecha",
+"ic": "rotate-ccw",
+"col": "#D9443F",
+"diff": "difícil",
+"def": true,
+"sub": "Media vuelta a la derecha"
+},
+{
+"id": "r11",
+"title": "¿Necesaria?",
+"ic": "microscope",
+"col": "#D9443F",
+"diff": "difícil",
+"def": false,
+"sub": "Silenciar sensoriales sobre azúcar"
+},
+{
+"id": "r12",
+"title": "Dos colores",
+"ic": "sliders-horizontal",
+"col": "#D9443F",
+"diff": "difícil",
+"def": false,
+"sub": "Retroceder sin escapar"
+},
+{
+"id": "r13",
+"title": "Explorador",
+"ic": "target",
+"col": "#D9443F",
+"diff": "medio",
+"def": false,
+"sub": "3 descendentes distintas"
+},
+{
+"id": "c1",
+"title": "Hola, mosca",
+"ic": "square-terminal",
+"col": "#3B4A7A",
+"diff": "medio",
+"def": false,
+"sub": "Solo con la consola"
+}
+]

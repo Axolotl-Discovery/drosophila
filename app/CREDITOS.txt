@@ -1,0 +1,7 @@
+Drosophila — Axolotl Discovery (versión de escritorio 4.1)
+
+Datos del conectoma: FlyWire v783 (Dorkenwald et al. 2024; Schlegel et al. 2024, Nature). Licencia CC-BY 4.0.
+Conectividad y lista de neuronas: repositorio philshiu/Drosophila_brain_model (Shiu et al. 2024, Nature), licencia MIT.
+Anotaciones de tipo celular y posición: flyconnectome/flywire_annotations.
+Modelo: réplica en JavaScript del modelo LIF de Shiu et al. (2024), validada contra su implementación en Brian2.
+Render 3D: three.js r128 (MIT). Aplicación: Electron 31 (MIT).

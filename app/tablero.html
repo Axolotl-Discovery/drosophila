@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tablero · Competencia Drosophila</title>
+<script>try{const t=localStorage.getItem('drosophila-theme')||'auto';document.documentElement.dataset.theme=(t==='dark'||(t==='auto'&&matchMedia('(prefers-color-scheme: dark)').matches))?'dark':'light';}catch(e){}</script>
+<style>
+@font-face{font-family:Nunito;font-weight:700;font-display:swap;src:url(fonts/nunito-latin-700-normal.woff2) format('woff2')}
+@font-face{font-family:Nunito;font-weight:800;font-display:swap;src:url(fonts/nunito-latin-800-normal.woff2) format('woff2')}
+@font-face{font-family:Inter;font-weight:400;font-display:swap;src:url(fonts/inter-latin-400-normal.woff2) format('woff2')}
+@font-face{font-family:Inter;font-weight:500;font-display:swap;src:url(fonts/inter-latin-500-normal.woff2) format('woff2')}
+@font-face{font-family:Inter;font-weight:600;font-display:swap;src:url(fonts/inter-latin-600-normal.woff2) format('woff2')}
+@font-face{font-family:Inter;font-weight:700;font-display:swap;src:url(fonts/inter-latin-700-normal.woff2) format('woff2')}
+@font-face{font-family:'JetBrains Mono';font-weight:400;font-display:swap;src:url(fonts/jetbrains-mono-latin-400-normal.woff2) format('woff2')}
+@font-face{font-family:'JetBrains Mono';font-weight:500;font-display:swap;src:url(fonts/jetbrains-mono-latin-500-normal.woff2) format('woff2')}
+:root{
+ --bg:#F6F4EF;--s1:#FFFFFF;--s2:#FBFAF7;--s3:#F0EDE6;--border:#E4E0D8;--border-strong:#CFC9BD;
+ --t1:#1B1A22;--t2:#55525F;--t3:#716D7B;
+ --accent:#B83A68;--accent-hover:#A0305A;--accent-press:#7E2447;--accent-soft:#FBE8EF;--on-accent:#FFFFFF;
+ --accent2:#0E7C74;--accent2-press:#095a54;--accent2-soft:#DDF3F0;
+ --ok:#1A7F45;--ok-soft:#DFF5E7;--ok-press:#12602F;--err:#C7372F;--err-soft:#FDE6E4;--warn:#8A5300;--warn-soft:#FFF3D6;
+ --l-red:#E5484D;--l-amber:#F5A524;--l-green:#2FB062;--l-blue:#3E7BFA;
+ --sh-1:0 1px 2px rgba(27,26,34,.06),0 1px 1px rgba(27,26,34,.04);
+ --sh-2:0 4px 12px -2px rgba(27,26,34,.08),0 2px 4px rgba(27,26,34,.04);
+ --sh-3:0 16px 40px -8px rgba(27,26,34,.18),0 4px 12px rgba(27,26,34,.06);
+ --hud:rgba(255,255,255,.94);
+ --f-display:"Nunito","Segoe UI Variable Display","Segoe UI",system-ui,sans-serif;
+ --f-ui:"Inter","Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif;
+ --f-mono:"JetBrains Mono","Cascadia Mono",Consolas,"DejaVu Sans Mono",monospace;
+ --ease:cubic-bezier(.2,.8,.2,1);--spring:cubic-bezier(.34,1.56,.64,1);
+ color-scheme:light;
+}
+:root[data-theme="dark"]{
+ --bg:#121118;--s1:#1A1922;--s2:#22212C;--s3:#2C2A37;--border:#34323F;--border-strong:#474456;
+ --t1:#F2F0F7;--t2:#B6B2C3;--t3:#8C889B;
+ --accent:#F0739E;--accent-hover:#F58CB0;--accent-press:#B84D74;--accent-soft:#3A1F2B;--on-accent:#1B1A22;
+ --accent2:#3CC8B4;--accent2-press:#238a7b;--accent2-soft:#163330;
+ --ok:#4ADE80;--ok-soft:#173422;--ok-press:#239150;--err:#FF6B6B;--err-soft:#3A1C1E;--warn:#FBBF24;--warn-soft:#3A2E12;
+ --l-red:#FF5C61;--l-amber:#FFB840;--l-green:#4FD67F;--l-blue:#5B8DFF;
+ --sh-1:0 1px 2px rgba(0,0,0,.45);--sh-2:0 4px 12px -2px rgba(0,0,0,.45),0 0 0 1px var(--border);--sh-3:0 16px 40px -8px rgba(0,0,0,.6),0 0 0 1px var(--border);
+ --hud:rgba(26,25,34,.94);color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--t1);font:400 15px/22px var(--f-ui);-webkit-font-smoothing:antialiased;overflow:hidden}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:8px}
+svg.i{width:20px;height:20px;flex:none}
+svg.i.sm{width:16px;height:16px}svg.i.lg{width:28px;height:28px}
+[hidden]{display:none!important}
+.tab-num{font-variant-numeric:tabular-nums}
+/* ===== componentes ===== */
+.btn{height:36px;padding:0 16px;border-radius:12px;font:600 14px/1 var(--f-ui);display:inline-flex;gap:8px;align-items:center;justify-content:center;border:0;transition:all .15s var(--ease);white-space:nowrap}
+.btn.sm{height:30px;padding:0 12px;font-size:13px;border-radius:10px}
+.btn.lg{height:46px;padding:0 24px;font-size:15px;border-radius:14px}
+.btn-primary{background:var(--accent);color:var(--on-accent);box-shadow:0 3px 0 var(--accent-press)}
+.btn-primary:hover{background:var(--accent-hover)}
+.btn-primary:active{transform:translateY(2px);box-shadow:0 1px 0 var(--accent-press)}
+.btn-ok{background:var(--ok);color:#fff;box-shadow:0 3px 0 var(--ok-press)}
+.btn-ok:active{transform:translateY(2px);box-shadow:0 1px 0 var(--ok-press)}
+.btn-secondary{background:var(--s1);color:var(--t1);border:1px solid var(--border-strong);box-shadow:0 2px 0 var(--border)}
+.btn-secondary:active{transform:translateY(1px);box-shadow:none}
+.btn-ghost{background:transparent;color:var(--t2)}
+.btn-ghost:hover{background:var(--s3);color:var(--t1)}
+.btn-ghost[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent)}
+.ibtn{width:36px;height:36px;padding:0;border-radius:10px;border:0;background:transparent;color:var(--t2);display:inline-grid;place-items:center;transition:background .15s}
+.ibtn:hover{background:var(--s3);color:var(--t1)}
+.ibtn[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent)}
+.chip{height:28px;padding:0 12px;border-radius:999px;background:var(--s3);color:var(--t2);font:500 13px/1 var(--f-ui);border:1px solid transparent;display:inline-flex;align-items:center;gap:6px}
+.chip[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent);border-color:currentColor}
+.seg{display:inline-flex;padding:4px;gap:4px;background:var(--s3);border-radius:12px}
+.seg button{height:32px;padding:0 14px;border-radius:9px;border:0;background:transparent;color:var(--t2);font:600 14px var(--f-ui);display:inline-flex;align-items:center;gap:7px;transition:all .22s var(--ease)}
+.seg button[aria-selected="true"]{background:var(--s1);color:var(--t1);box-shadow:var(--sh-1)}
+.seg.sm button{height:26px;padding:0 10px;font-size:12.5px}
+.card{background:var(--s1);border:1px solid var(--border);border-radius:16px}
+input[type=text],select,textarea{height:36px;padding:0 12px;border-radius:10px;background:var(--s2);border:1px solid var(--border-strong);color:var(--t1);font-size:14px}
+input[type=text]:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:999px;background:linear-gradient(to right,var(--accent) var(--v,50%),var(--s3) var(--v,50%));outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:#fff;border:2px solid var(--accent);box-shadow:var(--sh-2);cursor:pointer}
+.progress{height:10px;border-radius:999px;background:var(--s3);overflow:hidden}
+.progress>i{display:block;height:100%;width:0;border-radius:inherit;background:var(--ok);box-shadow:inset 0 -3px 0 rgba(0,0,0,.12);transition:width .6s var(--ease)}
+.badge{height:20px;padding:0 8px;border-radius:6px;font:600 12px/20px var(--f-ui);background:var(--accent2-soft);color:var(--accent2);display:inline-block}
+.muted{color:var(--t3)}
+#tip,.tooltip{position:fixed;z-index:90;pointer-events:none;padding:6px 10px;border-radius:8px;background:var(--t1);color:var(--bg);font:500 13px/18px var(--f-ui);box-shadow:var(--sh-2);opacity:0;transition:opacity .12s;max-width:280px}
+
+body{overflow:auto}
+.wrap{max-width:1500px;margin:0 auto;padding:18px 24px 40px}
+header.tb{display:flex;align-items:center;gap:14px;margin-bottom:18px;flex-wrap:wrap}
+.tb h1{font:800 26px/1.15 var(--f-display);margin:0;letter-spacing:-.01em}
+.tb h1 input{font:inherit;border:0;background:transparent;padding:0;width:min(520px,60vw);border-bottom:2px dashed var(--border-strong);border-radius:0;height:auto}
+.phase{font:700 12px/1 var(--f-ui);letter-spacing:.06em;text-transform:uppercase;padding:7px 10px;border-radius:8px;background:var(--s3);color:var(--t2)}
+.phase.running{background:var(--ok-soft);color:var(--ok)}.phase.ended{background:var(--accent-soft);color:var(--accent)}
+.clock{font:800 34px/1 var(--f-display);font-variant-numeric:tabular-nums;margin-left:auto;letter-spacing:-.02em}
+.ctl{display:flex;gap:8px}
+.join{display:flex;gap:18px;align-items:center;background:var(--s1);border:1px solid var(--border);border-radius:18px;padding:14px 18px;margin-bottom:18px;box-shadow:var(--sh-1)}
+.join .big{font:800 22px var(--f-mono);color:var(--accent)}
+.join .steps{color:var(--t2);font-size:14.5px;line-height:1.5}
+.join .cnt{margin-left:auto;text-align:right}.join .cnt b{font:800 30px var(--f-display);display:block;line-height:1}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:18px}
+.card{padding:16px 18px;box-shadow:var(--sh-1)}
+.card h2{font:800 17px var(--f-display);margin:0 0 12px;display:flex;align-items:center;gap:8px}
+.card h2 small{font:500 13px var(--f-ui);color:var(--t3);margin-left:auto}
+/* configuración */
+.rlist{display:flex;flex-direction:column;gap:6px}
+.ritem{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;border:1px solid var(--border);background:var(--s2)}
+.ritem.off{opacity:.55;background:transparent;border-style:dashed}
+.ritem .ic{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;color:#fff;flex:none}
+.ritem b{font:700 14px var(--f-ui);display:block}.ritem small{color:var(--t3);font-size:12.5px}
+.ritem .n{font:800 15px var(--f-display);width:22px;text-align:center;color:var(--t3)}
+.diff{font:600 11.5px var(--f-ui);padding:3px 8px;border-radius:6px;margin-left:auto}
+.diff.f{background:var(--ok-soft);color:var(--ok)}.diff.m{background:var(--warn-soft);color:var(--warn)}.diff.d{background:var(--err-soft);color:var(--err)}
+.sw{position:relative;width:40px;height:24px;flex:none}.sw input{opacity:0;position:absolute;inset:0;margin:0;cursor:pointer;z-index:1}
+.sw i{position:absolute;inset:0;border-radius:999px;background:var(--border-strong);transition:.2s}.sw i::after{content:"";position:absolute;left:3px;top:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.2s var(--spring)}
+.sw input:checked+i{background:var(--ok)}.sw input:checked+i::after{transform:translateX(16px)}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+.opts label{font:600 13px var(--f-ui);color:var(--t2);display:flex;flex-direction:column;gap:6px}
+.opts .row{grid-column:1/-1;flex-direction:row;align-items:center;justify-content:space-between}
+.teams{display:flex;flex-direction:column;gap:8px}
+.team{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:var(--s2);border:1px solid var(--border)}
+.dot{width:12px;height:12px;border-radius:50%;flex:none;background:var(--c)}
+.team b{flex:1}.on{font:600 12px var(--f-ui);color:var(--ok)}.off2{font:600 12px var(--f-ui);color:var(--t3)}
+.empty{color:var(--t3);text-align:center;padding:28px 0}
+/* clasificación */
+table.lb{width:100%;border-collapse:separate;border-spacing:0 8px}
+.lb th{font:700 11.5px var(--f-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--t3);text-align:left;padding:0 10px}
+.lb th.c,.lb td.c{text-align:center}.lb th.r,.lb td.r{text-align:right}
+.lb tr.row{background:var(--s1);box-shadow:var(--sh-1);cursor:pointer;transition:transform .5s var(--ease)}
+.lb tr.row td{padding:10px;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.lb tr.row td:first-child{border-left:5px solid var(--c);border-radius:14px 0 0 14px}.lb tr.row td:last-child{border-right:1px solid var(--border);border-radius:0 14px 14px 0}
+.lb tr.row:hover td{background:var(--s2)}
+.pos{font:800 26px var(--f-display);width:48px;text-align:center}
+.pos.p1{color:#D4A017}.pos.p2{color:#9AA3AE}.pos.p3{color:#B87333}
+.tname{font:800 18px var(--f-display)}.tname small{display:block;font:500 12px var(--f-ui);color:var(--t3)}
+.cells{display:flex;gap:6px}
+.cell{width:46px;height:40px;border-radius:10px;display:grid;place-items:center;font:700 11.5px/1.1 var(--f-ui);background:var(--s3);color:var(--t3);position:relative;overflow:hidden;text-align:center}
+.cell.win{background:var(--ok);color:#fff}.cell.skip{background:var(--s3);color:var(--t2);text-decoration:line-through}.cell.timeout{background:var(--err-soft);color:var(--err)}
+.cell.cur{background:var(--s1);color:var(--t1);outline:2px solid var(--c);outline-offset:-2px}
+.cell.cur i{position:absolute;left:0;bottom:0;height:4px;background:var(--c);transition:width .4s}
+.cell svg{width:16px;height:16px}
+.solved{font:800 26px var(--f-display)}
+.time{font:800 22px var(--f-mono);letter-spacing:-.02em}
+.mini{font:600 13px var(--f-ui);color:var(--t2)}.mini.bad{color:var(--err)}
+/* carrera */
+.race{height:300px;position:relative}.race canvas{width:100%;height:100%}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:8px;font:600 12.5px var(--f-ui);color:var(--t2)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+/* línea de pasos */
+.drawer{position:fixed;top:0;right:0;bottom:0;width:440px;background:var(--s1);box-shadow:var(--sh-3);z-index:20;display:flex;flex-direction:column;transform:translateX(105%);transition:transform .3s var(--ease)}
+.drawer.open{transform:none}
+.drawer header{display:flex;align-items:center;gap:10px;padding:16px 18px;border-bottom:1px solid var(--border)}
+.drawer header b{font:800 19px var(--f-display);flex:1}
+.drawer .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:12px 18px}
+.drawer .stats div{background:var(--s2);border-radius:10px;padding:8px;text-align:center;font:500 12px var(--f-ui);color:var(--t3)}.drawer .stats b{display:block;font:800 18px var(--f-display);color:var(--t1)}
+.tl{flex:1;overflow:auto;padding:4px 18px 18px;font:400 13px/1.45 var(--f-mono)}
+.tl .ev{display:grid;grid-template-columns:62px 1fr;gap:8px;padding:5px 0;border-bottom:1px dashed var(--border)}
+.tl .ts{color:var(--t3)}.tl .k{font-weight:500}
+.tl .ev.error .k{color:var(--err)}.tl .ev.win .k{color:var(--ok)}.tl .ev.hint .k{color:var(--warn)}.tl .ev.reto{background:var(--s2);border-radius:8px;padding:6px;margin-top:6px;border:0}
+.tl .ev.reto .k{font:700 13px var(--f-ui)}
+/* cuenta regresiva y podio */
+.count{position:fixed;inset:0;display:grid;place-items:center;background:color-mix(in srgb,var(--bg) 80%,transparent);z-index:30;font:800 220px/1 var(--f-display);color:var(--accent)}
+.podium{display:flex;gap:16px;justify-content:center;align-items:flex-end;margin:6px 0 20px}
+.podium div{width:200px;border-radius:18px 18px 0 0;background:var(--s1);border:1px solid var(--border);text-align:center;padding:14px 10px;box-shadow:var(--sh-2)}
+.podium .m{font:800 40px var(--f-display)}.podium b{display:block;font:800 20px var(--f-display);margin:4px 0}.podium small{color:var(--t3)}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--t1);color:var(--bg);padding:10px 16px;border-radius:12px;font:600 14px var(--f-ui);z-index:40}
+@media (max-width:1100px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="i-graduation-cap" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z" />
+  <path d="M22 10v6" />
+  <path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5" /></symbol>
+<symbol id="i-flask-conical" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2" />
+  <path d="M8.5 2h7" />
+  <path d="M7 16h10" /></symbol>
+<symbol id="i-terminal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5" />
+  <line x1="12" x2="20" y1="19" y2="19" /></symbol>
+<symbol id="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4" />
+  <path d="M12 2v2" />
+  <path d="M12 20v2" />
+  <path d="m4.93 4.93 1.41 1.41" />
+  <path d="m17.66 17.66 1.41 1.41" />
+  <path d="M2 12h2" />
+  <path d="M20 12h2" />
+  <path d="m6.34 17.66-1.41 1.41" />
+  <path d="m19.07 4.93-1.41 1.41" /></symbol>
+<symbol id="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" /></symbol>
+<symbol id="i-ellipsis" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1" />
+  <circle cx="19" cy="12" r="1" />
+  <circle cx="5" cy="12" r="1" /></symbol>
+<symbol id="i-play" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 20 12 6 21 6 3" /></symbol>
+<symbol id="i-pause" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="14" y="4" width="4" height="16" rx="1" />
+  <rect x="6" y="4" width="4" height="16" rx="1" /></symbol>
+<symbol id="i-rotate-ccw" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+  <path d="M3 3v5h5" /></symbol>
+<symbol id="i-gauge" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m12 14 4-4" />
+  <path d="M3.34 19a10 10 0 1 1 17.32 0" /></symbol>
+<symbol id="i-video" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5" />
+  <rect x="2" y="6" width="14" height="12" rx="2" /></symbol>
+<symbol id="i-brain" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z" />
+  <path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z" />
+  <path d="M15 13a4.5 4.5 0 0 1-3-4 4.5 4.5 0 0 1-3 4" />
+  <path d="M17.599 6.5a3 3 0 0 0 .399-1.375" />
+  <path d="M6.003 5.125A3 3 0 0 0 6.401 6.5" />
+  <path d="M3.477 10.896a4 4 0 0 1 .585-.396" />
+  <path d="M19.938 10.5a4 4 0 0 1 .585.396" />
+  <path d="M6 18a4 4 0 0 1-1.967-.516" />
+  <path d="M19.967 17.484A4 4 0 0 1 18 18" /></symbol>
+<symbol id="i-candy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m9.5 7.5-2 2a4.95 4.95 0 1 0 7 7l2-2a4.95 4.95 0 1 0-7-7Z" />
+  <path d="M14 6.5v10" />
+  <path d="M10 7.5v10" />
+  <path d="m16 7 1-5 1.37.68A3 3 0 0 0 19.7 3H21v1.3c0 .46.1.92.32 1.33L22 7l-5 1" />
+  <path d="m8 17-1 5-1.37-.68A3 3 0 0 0 4.3 21H3v-1.3a3 3 0 0 0-.32-1.33L2 17l5-1" /></symbol>
+<symbol id="i-droplet" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z" /></symbol>
+<symbol id="i-leaf" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z" />
+  <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12" /></symbol>
+<symbol id="i-volume-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z" />
+  <path d="M16 9a5 5 0 0 1 0 6" />
+  <path d="M19.364 18.364a9 9 0 0 0 0-12.728" /></symbol>
+<symbol id="i-lightbulb" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5" />
+  <path d="M9 18h6" />
+  <path d="M10 22h4" /></symbol>
+<symbol id="i-wine" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M8 22h8" />
+  <path d="M7 10h10" />
+  <path d="M12 15v7" />
+  <path d="M12 15a5 5 0 0 0 5-5c0-2-.5-4-2-8H9c-1.5 4-2 6-2 8a5 5 0 0 0 5 5Z" /></symbol>
+<symbol id="i-wind" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2" />
+  <path d="M9.6 4.6A2 2 0 1 1 11 8H2" />
+  <path d="M12.6 19.4A2 2 0 1 0 14 16H2" /></symbol>
+<symbol id="i-cloud-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M10.188 8.5A6 6 0 0 1 16 4a1 1 0 0 0 6 6 6 6 0 0 1-3 5.197" />
+  <path d="M13 16a3 3 0 1 1 0 6H7a5 5 0 1 1 4.9-6Z" /></symbol>
+<symbol id="i-hand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M18 11V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2" />
+  <path d="M14 10V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v2" />
+  <path d="M10 10.5V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2v8" />
+  <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15" /></symbol>
+<symbol id="i-eraser" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21" />
+  <path d="M22 21H7" />
+  <path d="m5 11 9 9" /></symbol>
+<symbol id="i-zap" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z" /></symbol>
+<symbol id="i-zap-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M10.513 4.856 13.12 2.17a.5.5 0 0 1 .86.46l-1.377 4.317" />
+  <path d="M15.656 10H20a1 1 0 0 1 .78 1.63l-1.72 1.773" />
+  <path d="M16.273 16.273 10.88 21.83a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14H4a1 1 0 0 1-.78-1.63l4.507-4.643" />
+  <path d="m2 2 20 20" /></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14" />
+  <path d="M12 5v14" /></symbol>
+<symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18" />
+  <path d="m6 6 12 12" /></symbol>
+<symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8" />
+  <path d="m21 21-4.3-4.3" /></symbol>
+<symbol id="i-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" />
+  <path d="M12 16v-4" />
+  <path d="M12 8h.01" /></symbol>
+<symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5" /></symbol>
+<symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+  <path d="M7 11V7a5 5 0 0 1 10 0v4" /></symbol>
+<symbol id="i-book-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7v14" />
+  <path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z" /></symbol>
+<symbol id="i-circle-help" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" />
+  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+  <path d="M12 17h.01" /></symbol>
+<symbol id="i-target" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" />
+  <circle cx="12" cy="12" r="6" />
+  <circle cx="12" cy="12" r="2" /></symbol>
+<symbol id="i-trophy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
+  <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+  <path d="M4 22h16" />
+  <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" />
+  <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
+  <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" /></symbol>
+<symbol id="i-flame" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" /></symbol>
+<symbol id="i-star" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></symbol>
+<symbol id="i-sparkles" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z" />
+  <path d="M20 3v4" />
+  <path d="M22 5h-4" />
+  <path d="M4 17v2" />
+  <path d="M5 18H3" /></symbol>
+<symbol id="i-footprints" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16v-2.38C4 11.5 2.97 10.5 3 8c.03-2.72 1.49-6 4.5-6C9.37 2 10 3.8 10 5.5c0 3.11-2 5.66-2 8.68V16a2 2 0 1 1-4 0Z" />
+  <path d="M20 20v-2.38c0-2.12 1.03-3.12 1-5.62-.03-2.72-1.49-6-4.5-6C14.63 6 14 7.8 14 9.5c0 3.11 2 5.66 2 8.68V20a2 2 0 1 0 4 0Z" />
+  <path d="M16 17h4" />
+  <path d="M4 13h4" /></symbol>
+<symbol id="i-undo-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5" />
+  <path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11" /></symbol>
+<symbol id="i-rocket" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z" />
+  <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z" />
+  <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0" />
+  <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" /></symbol>
+<symbol id="i-feather" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12.67 19a2 2 0 0 0 1.416-.588l6.154-6.172a6 6 0 0 0-8.49-8.49L5.586 9.914A2 2 0 0 0 5 11.328V18a1 1 0 0 0 1 1z" />
+  <path d="M16 8 2 22" />
+  <path d="M17.5 15H9" /></symbol>
+<symbol id="i-utensils" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2" />
+  <path d="M7 2v20" />
+  <path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7" /></symbol>
+<symbol id="i-moon-star" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9" />
+  <path d="M20 3v4" />
+  <path d="M22 5h-4" /></symbol>
+<symbol id="i-chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6" /></symbol>
+<symbol id="i-maximize-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9" />
+  <polyline points="9 21 3 21 3 15" />
+  <line x1="21" x2="14" y1="3" y2="10" />
+  <line x1="3" x2="10" y1="21" y2="14" /></symbol>
+<symbol id="i-minimize-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20" />
+  <polyline points="20 10 14 10 14 4" />
+  <line x1="14" x2="21" y1="10" y2="3" />
+  <line x1="3" x2="10" y1="21" y2="14" /></symbol>
+<symbol id="i-activity" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2" /></symbol>
+<symbol id="i-list-checks" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m3 17 2 2 4-4" />
+  <path d="m3 7 2 2 4-4" />
+  <path d="M13 6h8" />
+  <path d="M13 12h8" />
+  <path d="M13 18h8" /></symbol>
+<symbol id="i-crosshair" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" />
+  <line x1="22" x2="18" y1="12" y2="12" />
+  <line x1="6" x2="2" y1="12" y2="12" />
+  <line x1="12" x2="12" y1="6" y2="2" />
+  <line x1="12" x2="12" y1="22" y2="18" /></symbol>
+<symbol id="i-trash-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18" />
+  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+  <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+  <line x1="10" x2="10" y1="11" y2="17" />
+  <line x1="14" x2="14" y1="11" y2="17" /></symbol>
+<symbol id="i-sliders-horizontal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="21" x2="14" y1="4" y2="4" />
+  <line x1="10" x2="3" y1="4" y2="4" />
+  <line x1="21" x2="12" y1="12" y2="12" />
+  <line x1="8" x2="3" y1="12" y2="12" />
+  <line x1="21" x2="16" y1="20" y2="20" />
+  <line x1="12" x2="3" y1="20" y2="20" />
+  <line x1="14" x2="14" y1="2" y2="6" />
+  <line x1="8" x2="8" y1="10" y2="14" />
+  <line x1="16" x2="16" y1="18" y2="22" /></symbol>
+<symbol id="i-chart-line" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v16a2 2 0 0 0 2 2h16" />
+  <path d="m19 9-5 5-4-4-3 3" /></symbol>
+<symbol id="i-square-terminal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m7 11 2-2-2-2" />
+  <path d="M11 13h4" />
+  <rect width="18" height="18" x="3" y="3" rx="2" ry="2" /></symbol>
+<symbol id="i-circle-dot" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" />
+  <circle cx="12" cy="12" r="1" /></symbol>
+<symbol id="i-dna" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m10 16 1.5 1.5" />
+  <path d="m14 8-1.5-1.5" />
+  <path d="M15 2c-1.798 1.998-2.518 3.995-2.807 5.993" />
+  <path d="m16.5 10.5 1 1" />
+  <path d="m17 6-2.891-2.891" />
+  <path d="M2 15c6.667-6 13.333 0 20-6" />
+  <path d="m20 9 .891.891" />
+  <path d="M3.109 14.109 4 15" />
+  <path d="m6.5 12.5 1 1" />
+  <path d="m7 18 2.891 2.891" />
+  <path d="M9 22c1.798-1.998 2.518-3.995 2.807-5.993" /></symbol>
+<symbol id="i-microscope" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18h8" />
+  <path d="M3 22h18" />
+  <path d="M14 22a7 7 0 1 0 0-14h-1" />
+  <path d="M9 14h2" />
+  <path d="M9 12a2 2 0 0 1-2-2V6h6v4a2 2 0 0 1-2 2Z" />
+  <path d="M12 6V3a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v3" /></symbol>
+<symbol id="i-save" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" />
+  <path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7" />
+  <path d="M7 3v4a1 1 0 0 0 1 1h7" /></symbol>
+<symbol id="i-file-text" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
+  <path d="M14 2v4a2 2 0 0 0 2 2h4" />
+  <path d="M10 9H8" />
+  <path d="M16 13H8" />
+  <path d="M16 17H8" /></symbol>
+<symbol id="i-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+  <polyline points="7 10 12 15 17 10" />
+  <line x1="12" x2="12" y1="15" y2="3" /></symbol>
+<symbol id="i-chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6" /></symbol>
+<symbol id="i-arrow-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14" />
+  <path d="m12 5 7 7-7 7" /></symbol>
+<symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" />
+  <circle cx="12" cy="12" r="3" /></symbol>
+</defs></svg>
+<div class="wrap">
+  <header class="tb">
+    <span class="phase" id="phase">Sala de espera</span>
+    <h1 id="title"></h1>
+    <div class="clock" id="clock">00:00</div>
+    <div class="ctl" id="ctl" hidden>
+      <button class="btn btn-primary lg" id="bStart"><svg class="i"><use href="#i-play"/></svg>Iniciar</button>
+      <button class="btn btn-secondary lg" id="bEnd" hidden><svg class="i"><use href="#i-trophy"/></svg>Terminar</button>
+      <button class="btn btn-secondary lg" id="bExport" hidden><svg class="i"><use href="#i-download"/></svg>Exportar</button>
+      <button class="btn btn-ghost lg" id="bReset" hidden><svg class="i"><use href="#i-rotate-ccw"/></svg>Nueva ronda</button>
+    </div>
+  </header>
+  <div class="join" id="join">
+    <svg class="i lg" style="color:var(--accent)"><use href="#i-sparkles"/></svg>
+    <div class="steps">En cada compu: abre <b>Drosophila</b> → menú <b>⋯</b> → <b>Competencia</b> → elige esta sala.<br>Si no aparece, escribe la dirección: <span class="big" id="addr"></span></div>
+    <div class="cnt"><b id="nteams">0</b><span class="muted">de 10 equipos</span></div>
+  </div>
+  <div id="podium"></div>
+  <div class="grid" id="lobby">
+    <section class="card" id="cfgCard"><h2><svg class="i"><use href="#i-list-checks"/></svg>Retos<small id="cfgSum"></small></h2>
+      <div class="rlist" id="rlist"></div>
+      <div class="opts" id="opts">
+        <label>Tiempo por reto<select id="oLimit"><option value="180">3 min</option><option value="240">4 min</option><option value="300">5 min</option></select></label>
+        <label>Penalización por error<select id="oErr"><option value="0">sin penalización</option><option value="10">+10 s</option><option value="20">+20 s</option><option value="30">+30 s</option></select></label>
+        <label>Penalización por pista<select id="oHint"><option value="0">sin penalización</option><option value="30">+30 s</option><option value="60">+60 s</option><option value="90">+90 s</option></select></label>
+        <label class="row">Modo difícil <span class="muted" style="font-weight:500;flex:1;margin-left:10px">sin lista corta de neuronas</span><span class="sw"><input type="checkbox" id="oHard"><i></i></span></label>
+      </div>
+    </section>
+    <section class="card"><h2><svg class="i"><use href="#i-flame"/></svg>Equipos<small id="tSum"></small></h2><div class="teams" id="teams"></div></section>
+  </div>
+  <div id="live" hidden>
+    <section class="card" style="padding:12px 16px 4px;margin-bottom:18px"><table class="lb" id="lb"></table></section>
+    <section class="card"><h2><svg class="i"><use href="#i-chart-line"/></svg>Retos resueltos en el tiempo</h2><div class="race"><canvas id="race"></canvas></div><div class="legend" id="legend"></div></section>
+  </div>
+</div>
+<aside class="drawer" id="drawer"><header><span class="dot" id="dDot"></span><b id="dName"></b><button class="ibtn" id="dClose"><svg class="i"><use href="#i-x"/></svg></button></header>
+  <div class="stats" id="dStats"></div><div class="tl" id="tl"></div></aside>
+<div class="count" id="count" hidden></div>
+<script>
+const Q=new URLSearchParams(location.search),ADMIN=Q.get('admin')||'';
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const ico=(n,c)=>`<svg class="i ${c||''}"><use href="#i-${n}"/></svg>`;
+const mmss=ms=>{ms=Math.max(0,ms);const s=Math.floor(ms/1000);return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');};
+let S=null,off=0,drawerTeam=null,cfgDirty=false;
+const api=(p,body)=>fetch(p+(p.includes('?')?'&':'?')+'admin='+encodeURIComponent(ADMIN),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body||{})}).then(r=>r.json());
+function toast(t){const d=document.createElement('div');d.className='toast';d.textContent=t;document.body.appendChild(d);setTimeout(()=>d.remove(),2600);}
+const es=new EventSource('/api/stream'+(ADMIN?'?admin='+encodeURIComponent(ADMIN):''));
+es.addEventListener('state',e=>{S=JSON.parse(e.data);off=S.now-Date.now();render();});
+/* ---------- render ---------- */
+function render(){
+  const ph=S.phase;$('phase').textContent={lobby:'Sala de espera',running:'En curso',ended:'Terminada'}[ph];$('phase').className='phase '+ph;
+  if(ADMIN&&ph==='lobby'){if(!$('nameIn'))$('title').innerHTML=`<input id="nameIn" value="${esc(S.name)}">`;const ni=$('nameIn');if(document.activeElement!==ni)ni.value=S.name;ni.onchange=()=>api('/api/admin/config',{name:ni.value,config:{}});}
+  else $('title').textContent=S.name;
+  $('ctl').hidden=!ADMIN;$('bStart').hidden=ph!=='lobby';$('bEnd').hidden=ph!=='running';$('bExport').hidden=ph==='lobby';$('bReset').hidden=ph!=='ended';
+  $('addr').textContent=S.addrs.length?S.addrs.map(a=>a+(S.port!==7777?':'+S.port:'')).join('  ·  '):location.host;
+  $('nteams').textContent=S.teams.length;$('join').hidden=ph==='ended';
+  $('lobby').hidden=ph!=='lobby';$('live').hidden=ph==='lobby';
+  if(ph==='lobby'){renderCfg();renderTeams();}else{renderLB();drawRace();}
+  renderPodium();if(drawerTeam)renderDrawerStats();
+}
+function renderCfg(){const card=$('cfgCard');card.hidden=!ADMIN&&false;
+  const sel=S.config.retos;const all=S.allRetos;const order=[...sel.map(id=>all.find(r=>r.id===id)).filter(Boolean),...all.filter(r=>!sel.includes(r.id))];
+  const dc=d=>d==='fácil'?'f':d==='medio'?'m':'d';
+  $('rlist').innerHTML=order.map(r=>{const on=sel.includes(r.id),k=sel.indexOf(r.id);return `<div class="ritem${on?'':' off'}" data-id="${r.id}"><span class="n">${on?k+1:''}</span><span class="ic" style="background:${r.col}">${ico(r.ic,'sm')}</span>
+    <div><b>${esc(r.title)}</b><small>${esc(r.sub)}</small></div><span class="diff ${dc(r.diff)}">${r.diff}</span>
+    ${ADMIN?`${on?`<button class="ibtn" data-up="${r.id}" title="Subir">${ico('chevron-down','sm').replace('<svg','<svg style="transform:rotate(180deg)"')}</button>`:''}<span class="sw"><input type="checkbox" data-t="${r.id}" ${on?'checked':''}><i></i></span>`:''}</div>`;}).join('');
+  const lim=S.config.limit;$('cfgSum').textContent=`${sel.length} retos · máx. ${Math.round(sel.length*lim/60)} min`;
+  if(document.activeElement.tagName!=='SELECT'){$('oLimit').value=String(lim);$('oErr').value=String(S.config.pen.err);$('oHint').value=String(S.config.pen.hint);}
+  $('oHard').checked=S.config.hard;$('opts').querySelectorAll('select,input').forEach(x=>x.disabled=!ADMIN);
+  if(!ADMIN)return;
+  $('rlist').querySelectorAll('[data-t]').forEach(c=>c.onchange=()=>{let r=S.config.retos.slice();if(c.checked)r.push(c.dataset.t);else r=r.filter(x=>x!==c.dataset.t);setCfg({retos:r});});
+  $('rlist').querySelectorAll('[data-up]').forEach(b=>b.onclick=()=>{const r=S.config.retos.slice();const i=r.indexOf(b.dataset.up);if(i>0){[r[i-1],r[i]]=[r[i],r[i-1]];setCfg({retos:r});}});
+}
+function setCfg(c){api('/api/admin/config',{config:c}).then(r=>{if(r.error)toast(r.error);});}
+$('oLimit').onchange=e=>setCfg({limit:+e.target.value});$('oErr').onchange=()=>setCfg({pen:{err:+$('oErr').value,hint:+$('oHint').value}});$('oHint').onchange=$('oErr').onchange;$('oHard').onchange=e=>setCfg({hard:e.target.checked});
+function renderTeams(){const T=S.teams;$('tSum').textContent=`${T.filter(t=>t.online).length} conectados`;
+  $('teams').innerHTML=T.length?T.map(t=>`<div class="team" style="--c:${t.color}"><span class="dot"></span><b>${esc(t.name)}</b><span class="${t.online?'on':'off2'}">${t.online?'conectado':'sin conexión'}</span>${ADMIN?`<button class="ibtn" data-kick="${t.id}" title="Quitar">${ico('x','sm')}</button>`:''}</div>`).join(''):'<div class="empty">Aún no se une nadie.</div>';
+  $('teams').querySelectorAll('[data-kick]').forEach(b=>b.onclick=()=>{if(confirm('¿Quitar a este equipo?'))api('/api/admin/kick',{id:b.dataset.kick});});}
+let lastPos={};
+function renderLB(){const R=S.retos,now=Date.now()+off;
+  let h=`<thead><tr><th class="c">#</th><th>Equipo</th><th>Retos</th><th class="c">Resueltos</th><th class="r">Tiempo</th><th class="c">Errores</th><th class="c">Pistas</th></tr></thead><tbody>`;
+  for(const t of S.teams){const cells=R.map((r,k)=>{const x=t.results[k];
+      if(x&&x.st==='win')return `<div class="cell win" title="${esc(r.title)} · ${mmss(x.t)}">${mmss(x.t)}</div>`;
+      if(x&&x.st==='skip')return `<div class="cell skip" title="${esc(r.title)} · saltado">${ico('chevron-right')}</div>`;
+      if(x&&x.st==='timeout')return `<div class="cell timeout" title="${esc(r.title)} · tiempo agotado">${ico('x')}</div>`;
+      if(k===t.cur&&S.phase==='running'&&!t.finished)return `<div class="cell cur" title="${esc(r.title)}">${ico(r.ic)}<i style="width:${Math.round((t.prog||0)*100)}%"></i></div>`;
+      return `<div class="cell" title="${esc(r.title)}">${k+1}</div>`;}).join('');
+    h+=`<tr class="row" data-id="${t.id}" style="--c:${t.color}"><td class="pos p${t.pos}">${t.pos}</td><td><div class="tname">${esc(t.name)}<small>${t.finished?'terminó':S.phase==='ended'?'no terminó':t.online?(R[t.cur]?'en '+esc(R[t.cur].title):''):'sin conexión'}</small></div></td>
+      <td><div class="cells">${cells}</div></td><td class="c solved">${t.solved}</td><td class="r"><div class="time">${mmss(t.time)}</div>${t.pen?`<div class="mini">+${Math.round(t.pen/1000)} s penal.</div>`:''}</td>
+      <td class="c mini ${t.errors?'bad':''}">${t.errors}</td><td class="c mini">${t.hints}</td></tr>`;}
+  if(!S.teams.length)h+='<tr><td colspan="7" class="empty">Sin equipos.</td></tr>';
+  const first={};$('lb').querySelectorAll('tr.row').forEach(r=>first[r.dataset.id]=r.getBoundingClientRect().top);
+  $('lb').innerHTML=h+'</tbody>';
+  $('lb').querySelectorAll('tr.row').forEach(r=>{const f=first[r.dataset.id];if(f!=null){const d=f-r.getBoundingClientRect().top;if(Math.abs(d)>2){r.style.transition='none';r.style.transform=`translateY(${d}px)`;requestAnimationFrame(()=>{r.style.transition='';r.style.transform='';});}}
+    r.onclick=()=>ADMIN?openDrawer(r.dataset.id):null;});
+}
+function drawRace(){const cv=$('race'),b=cv.getBoundingClientRect();if(!b.width)return;const dpr=devicePixelRatio||1;cv.width=b.width*dpr;cv.height=b.height*dpr;const x=cv.getContext('2d');x.setTransform(dpr,0,0,dpr,0,0);
+  const cs=getComputedStyle(document.documentElement),t3=cs.getPropertyValue('--t3'),bd=cs.getPropertyValue('--border'),ff=getComputedStyle(document.body).fontFamily;
+  const now=(S.phase==='ended'?S.endAt:Date.now()+off)-S.startAt;const span=Math.max(60000,now,S.retos.length*0);const N=S.retos.length;
+  const L=40,Rr=b.width-14,T=10,B=b.height-28;x.font='500 12px '+ff;x.fillStyle=t3;x.strokeStyle=bd;x.lineWidth=1;
+  for(let k=0;k<=N;k++){const y=B-k/N*(B-T);x.beginPath();x.moveTo(L,y);x.lineTo(Rr,y);x.stroke();x.textAlign='right';x.textBaseline='middle';x.fillText(k,L-8,y);}
+  const step=span>1200000?300000:span>360000?60000:30000;x.textAlign='center';x.textBaseline='top';for(let s=0;s<=span;s+=step){const px=L+s/span*(Rr-L);x.fillText(mmss(s),px,B+8);}
+  const X=e=>L+Math.max(0,Math.min(1,e/span))*(Rr-L),Y=v=>B-v/N*(B-T);
+  S.teams.slice().reverse().forEach(t=>{x.strokeStyle=t.color;x.lineWidth=3;x.lineJoin='round';x.beginPath();x.moveTo(X(0),Y(0));let v=0;
+    for(const [e,c] of t.race){x.lineTo(X(e),Y(v));v=c;x.lineTo(X(e),Y(v));}const end=t.finished&&t.results.length?Math.max(...t.results.map(r=>r&&r.e||0)):now;x.lineTo(X(Math.min(now,end||now)),Y(v));x.stroke();
+    x.fillStyle=t.color;x.beginPath();x.arc(X(Math.min(now,end||now)),Y(v),5,0,7);x.fill();});
+  $('legend').innerHTML=S.teams.map(t=>`<span><i class="dot" style="--c:${t.color}"></i>${esc(t.name)}</span>`).join('');}
+function renderPodium(){const el=$('podium');if(S.phase!=='ended'||!S.teams.length){el.innerHTML='';return;}const top=S.teams.slice(0,3);const ord=[top[1],top[0],top[2]].filter(Boolean);const hgt={1:210,2:175,3:150};
+  el.innerHTML=`<div class="podium">${ord.map(t=>`<div style="height:${hgt[t.pos]}px;border-top:5px solid ${t.color}"><span class="m">${['','🥇','🥈','🥉'][t.pos]}</span><b>${esc(t.name)}</b><small>${t.solved} retos · ${mmss(t.time)}</small></div>`).join('')}</div>`;}
+/* ---------- línea de pasos ---------- */
+const KN={reto:'Empieza reto',win:'Resuelto',skip:'Saltado',timeout:'Tiempo agotado',error:'Error',hint:'Pidió pista',construct:'Construcción',light:'Luz',stim:'Estímulo',cmd:'Comando',beh:'Conducta',remove:'Quitó construcción',opsin:'Cambió opsina',join:'Se unió'};
+const ERR={luz:'luz que no activa su opsina',modo:'opsina contraria a lo que pide el reto',intento:'probó y lo deshizo',comando:'comando no válido',reinicio:'reinició el reto'};
+function evText(e){switch(e.k){case 'reto':return `${(e.i+1)}. ${esc((S.retos[e.i]||{}).title||'')}`;case 'win':case 'skip':case 'timeout':return `${KN[e.k]} en ${mmss(e.t)}`;
+  case 'error':return `${KN.error}: ${ERR[e.type]||e.type}${e.d?' · '+esc(e.d):''}`;case 'construct':return `${esc(e.opsin)} en ${esc(e.target)}`;case 'remove':return `${KN.remove}: ${esc(e.target)}`;case 'opsin':return `${esc(e.target)} → ${esc(e.opsin)}`;
+  case 'light':return `Luz ${esc(e.color)} ${e.on?'encendida':'apagada'}`;case 'stim':return `${esc(e.type)} ${e.on===false?'quitado':'colocado'}`;case 'cmd':return `› ${esc(e.text)}`;case 'beh':return `→ ${esc(e.b)}`;case 'hint':return KN.hint;default:return esc(e.k);}}
+async function openDrawer(id){drawerTeam=id;$('drawer').classList.add('open');renderDrawerStats();$('tl').innerHTML='<div class="muted">Cargando…</div>';await loadTL();}
+async function loadTL(){if(!drawerTeam)return;const r=await fetch(`/api/admin/events?team=${drawerTeam}&admin=${encodeURIComponent(ADMIN)}`).then(r=>r.json());
+  const keep=$('tl').scrollHeight-$('tl').scrollTop-$('tl').clientHeight<40;
+  $('tl').innerHTML=r.events.filter(e=>e.k!=='beh'||true).map(e=>`<div class="ev ${e.k}"><span class="ts">${e.e!=null?mmss(e.e):''}</span><span class="k">${evText(e)}</span></div>`).join('')||'<div class="muted">Sin pasos todavía.</div>';
+  if(keep)$('tl').scrollTop=$('tl').scrollHeight;}
+function renderDrawerStats(){const t=S.teams.find(x=>x.id===drawerTeam);if(!t){$('drawer').classList.remove('open');drawerTeam=null;return;}
+  $('dName').textContent=t.name;$('dDot').style.setProperty('--c',t.color);
+  $('dStats').innerHTML=`<div><b>${t.pos}º</b>lugar</div><div><b>${t.solved}</b>resueltos</div><div><b>${t.errors}</b>errores</div><div><b>${t.hints}</b>pistas</div>`;}
+setInterval(()=>{if(drawerTeam)loadTL();},2500);
+$('dClose').onclick=()=>{$('drawer').classList.remove('open');drawerTeam=null;};
+/* ---------- controles ---------- */
+$('bStart').onclick=async()=>{if(!S.teams.length&&!confirm('No hay equipos. ¿Iniciar de todos modos?'))return;const r=await api('/api/admin/start');if(r.error)toast(r.error);};
+$('bEnd').onclick=async()=>{if(!confirm('¿Terminar la competencia para todos?'))return;const r=await api('/api/admin/end');if(r.dir)toast('Resultados guardados en '+r.dir);};
+$('bExport').onclick=async()=>{const r=await api('/api/admin/export');toast(r.dir?'Guardado en '+r.dir:'Descargando…');
+  if(!r.dir)for(const f of ['clasificacion.csv','eventos.csv','competencia.json']){const a=document.createElement('a');a.href=`/api/export/${f}?admin=${encodeURIComponent(ADMIN)}`;a.download=f;a.click();}};
+$('bReset').onclick=async()=>{if(!confirm('¿Empezar otra ronda con los mismos equipos? Los resultados actuales ya quedaron guardados.'))return;await api('/api/admin/reset');};
+/* ---------- reloj ---------- */
+function tick(){if(S){const now=Date.now()+off;
+    if(S.phase==='running'){const d=S.startAt-now;const c=$('count');if(d>0){c.hidden=false;c.textContent=Math.ceil(d/1000);}else{if(!c.hidden){c.textContent='¡Ya!';setTimeout(()=>c.hidden=true,600);}$('clock').textContent=mmss(now-S.startAt);}}
+    else if(S.phase==='ended')$('clock').textContent=mmss(S.endAt-S.startAt);else $('clock').textContent='00:00';
+    if(S.phase==='running'&&Date.now()%1000<260)drawRace();}
+  requestAnimationFrame(tick);}
+tick();addEventListener('resize',()=>S&&S.phase!=='lobby'&&drawRace());
+</script>
+</body>
+</html>
