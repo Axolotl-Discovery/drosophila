@@ -47,7 +47,9 @@ app.whenReady().then(()=>{
   protocol.handle('app',req=>{const u=new URL(req.url);let p=decodeURIComponent(u.pathname);if(p==='/'||!p)p='/index.html';
     const file=path.normalize(path.join(__dirname,p));if(!file.startsWith(__dirname))return new Response('no',{status:403});
     return net.fetch(pathToFileURL(file).toString());});
-  Menu.setApplicationMenu(null);
+  // En Mac el menú es necesario para Cmd+Q, Cmd+C/V y Cmd+W; en Windows se oculta.
+  if(process.platform==='darwin')Menu.setApplicationMenu(Menu.buildFromTemplate([{role:'appMenu'},{role:'editMenu'},{role:'viewMenu'},{role:'windowMenu'}]));
+  else Menu.setApplicationMenu(null);
   createWindow();
   app.on('activate',()=>{if(BrowserWindow.getAllWindows().length===0)createWindow();});
 });

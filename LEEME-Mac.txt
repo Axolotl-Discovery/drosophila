@@ -1,0 +1,26 @@
+DROSOPHILA — Simulador del conectoma completo de la mosca de la fruta
+Axolotl Discovery
+
+CÓMO ABRIRLO EN MAC
+1. Doble clic en el .zip descargado: aparece la carpeta "Drosophila".
+2. Arrastra Drosophila.app a tu carpeta Aplicaciones (opcional, pero recomendado).
+3. La primera vez macOS no la deja abrir porque la app no está notarizada por Apple:
+   - macOS 15 (Sequoia) o más nuevo: intenta abrirla, pulsa "Listo", ve a
+     Ajustes del Sistema → Privacidad y seguridad, baja hasta "Drosophila" y pulsa "Abrir de todos modos".
+   - macOS 14 o anterior: clic derecho (o Control + clic) sobre Drosophila.app → Abrir → Abrir.
+   Solo se hace una vez.
+4. Si dice que "está dañada", abre Terminal y escribe (con la app ya en Aplicaciones):
+       xattr -cr /Applications/Drosophila.app
+   y vuelve a abrirla.
+
+¿CUÁL DESCARGO?
+- Drosophila-mac-apple.zip: Macs con chip Apple (M1, M2, M3, M4…), la mayoría desde 2020.
+- Drosophila-mac-intel.zip: Macs con procesador Intel.
+  Para saberlo: menú  → Acerca de esta Mac → "Chip" (Apple) o "Procesador" (Intel).
+
+REQUISITOS
+macOS 11 o más nuevo, 8 GB de RAM (recomendado 16 GB). No necesita internet.
+
+COMPETENCIA EN CLASE
+Funciona igual que en Windows (menú ⋯ → Competencia). Si organizas desde una Mac, la primera vez macOS
+pregunta si permites conexiones entrantes: pulsa "Permitir". Mac y Windows pueden competir en la misma sala.

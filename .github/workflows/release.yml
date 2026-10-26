@@ -1,4 +1,4 @@
-name: Publicar versión para Windows
+name: Publicar versión (Windows y Mac)
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Etiqueta de la versión (ej. v4.1.0)'
+        description: 'Etiqueta de la versión (ej. v4.2.0)'
         required: true
 
 permissions:
@@ -20,14 +20,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Descargar Electron para Windows
+      - name: Armar Drosophila para Windows
         run: |
           curl -fsSL -o electron.zip "https://github.com/electron/electron/releases/download/v${ELECTRON_VERSION}/electron-v${ELECTRON_VERSION}-win32-x64.zip"
           mkdir Drosophila && unzip -q electron.zip -d Drosophila
-
-      - name: Armar la app
-        run: |
           cd Drosophila
           mv electron.exe Drosophila.exe
           rm -f resources/default_app.asar
@@ -37,15 +33,93 @@ jobs:
           zip -qr -9 Drosophila-win64.zip Drosophila
           unzip -tq Drosophila-win64.zip
           ls -l Drosophila-win64.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: win
+          path: Drosophila-win64.zip
 
+  mac:
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        include:
+          - arch: arm64
+            name: apple
+          - arch: x64
+            name: intel
+    steps:
+      - uses: actions/checkout@v4
+      - name: Armar Drosophila.app (${{ matrix.name }})
+        run: |
+          VER=$(node -p "require('./app/package.json').version")
+          curl -fsSL -o electron.zip "https://github.com/electron/electron/releases/download/v${ELECTRON_VERSION}/electron-v${ELECTRON_VERSION}-darwin-${{ matrix.arch }}.zip"
+          mkdir e && ditto -x -k electron.zip e
+          mkdir Drosophila && mv e/Electron.app Drosophila/Drosophila.app
+          APP=Drosophila/Drosophila.app
+          rm -f "$APP/Contents/Resources/default_app.asar"
+          cp -R app "$APP/Contents/Resources/app"
+          cp LEEME-Mac.txt Drosophila/LEEME.txt
+          P="$APP/Contents/Info.plist"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleName Drosophila" "$P"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName Drosophila" "$P" 2>/dev/null || /usr/libexec/PlistBuddy -c "Add :CFBundleDisplayName string Drosophila" "$P"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier org.axolotldiscovery.drosophila" "$P"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VER" "$P"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $VER" "$P"
+          mkdir icono.iconset
+          for s in 16 32 128 256 512; do
+            sips -z $s $s fuente/icono.png --out icono.iconset/icon_${s}x${s}.png >/dev/null
+            sips -z $((s*2)) $((s*2)) fuente/icono.png --out icono.iconset/icon_${s}x${s}@2x.png >/dev/null
+          done
+          iconutil -c icns icono.iconset -o "$APP/Contents/Resources/electron.icns"
+          codesign --force --deep --sign - "$APP"
+          codesign --verify --deep --strict "$APP"
+          echo "APP=$APP" >> "$GITHUB_ENV"
+
+      - name: Prueba de humo (abre la app y simula)
+        if: matrix.arch == 'arm64'
+        run: |
+          export DROSO_TEST="$PWD/prueba-mac.png" DROSO_T1=35000 DROSO_T2=70000
+          perl -e 'alarm 160; exec @ARGV' "$APP/Contents/MacOS/Electron" > prueba.log 2>&1 || true
+          grep -E "RESULT|rror" prueba.log | head -20 || true
+          grep -q '"loading":false' prueba.log
+
+      - uses: actions/upload-artifact@v4
+        if: matrix.arch == 'arm64'
+        with:
+          name: prueba-mac
+          path: |
+            prueba-mac.png
+            prueba.log
+          if-no-files-found: ignore
+
+      - name: Comprimir
+        run: |
+          ditto -c -k --sequesterRsrc --keepParent Drosophila "Drosophila-mac-${{ matrix.name }}.zip"
+          ls -l Drosophila-mac-*.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mac-${{ matrix.name }}
+          path: Drosophila-mac-${{ matrix.name }}.zip
+
+  publicar:
+    needs: [windows, mac]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
       - name: Publicar en Releases
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ github.event.inputs.tag || github.ref_name }}
         run: |
+          ls -l dist
           VER=$(node -p "require('./app/package.json').version")
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" Drosophila-win64.zip --clobber
+            gh release upload "$TAG" dist/*.zip --clobber
+            gh release edit "$TAG" --notes-file NOTAS.md
           else
-            gh release create "$TAG" Drosophila-win64.zip --title "Drosophila $VER" --notes-file NOTAS.md
+            gh release create "$TAG" dist/*.zip --title "Drosophila $VER" --notes-file NOTAS.md --target "$GITHUB_SHA"
           fi

@@ -1,1 +1,1 @@
-{"name":"drosophila","productName":"Drosophila","version":"4.1.0","description":"Simulador del conectoma completo de Drosophila (FlyWire v783, modelo LIF de Shiu y col. 2024) con conducta en 3D. Axolotl Discovery.","main":"main.js","author":"Axolotl Discovery","license":"MIT"}
+{"name": "drosophila", "productName": "Drosophila", "version": "4.2.0", "description": "Simulador del conectoma completo de Drosophila (FlyWire v783, modelo LIF de Shiu y col. 2024) con conducta en 3D. Axolotl Discovery.", "main": "main.js", "author": "Axolotl Discovery", "license": "MIT"}
