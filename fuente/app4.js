@@ -178,11 +178,13 @@ async function initCloud(){
   const P=new Float32Array(N*3);for(let i=0;i<N;i++){P[3*i]=pos[3*i];P[3*i+1]=-pos[3*i+1];P[3*i+2]=-pos[3*i+2];}
   const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(P,3));
   const col=new Float32Array(N*3);geo.setAttribute('color',new THREE.BufferAttribute(col,3));
-  const mat=new THREE.PointsMaterial({size:1.5,sizeAttenuation:false,vertexColors:true,transparent:true,opacity:.35,depthWrite:false});
+  const dot=(()=>{const c=document.createElement('canvas');c.width=c.height=64;const g=c.getContext('2d');const r=g.createRadialGradient(32,32,0,32,32,32);
+    r.addColorStop(0,'rgba(255,255,255,1)');r.addColorStop(.35,'rgba(255,255,255,.9)');r.addColorStop(.7,'rgba(255,255,255,.25)');r.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=r;g.fillRect(0,0,64,64);return new THREE.CanvasTexture(c);})();
+  const mat=new THREE.PointsMaterial({size:2.4*Math.min(2,devicePixelRatio),map:dot,sizeAttenuation:false,vertexColors:true,transparent:true,opacity:.35,depthWrite:false});
   scene.add(new THREE.Points(geo,mat));
   const layer=(n,size)=>{const p=new Float32Array(n*3),c=new Float32Array(n*3),g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(p,3));g.setAttribute('color',new THREE.BufferAttribute(c,3));g.setDrawRange(0,0);
-    const m=new THREE.PointsMaterial({size,sizeAttenuation:false,vertexColors:true,transparent:true,opacity:1,depthWrite:false});const o=new THREE.Points(g,m);o.frustumCulled=false;scene.add(o);return {p,c,g,m,n};};
-  const mark=layer(20000,6),hot=layer(8000,4);mark.m.opacity=.5;
+    const m=new THREE.PointsMaterial({size:size*Math.min(2,devicePixelRatio),map:dot,sizeAttenuation:false,vertexColors:true,transparent:true,opacity:1,depthWrite:false});const o=new THREE.Points(g,m);o.frustumCulled=false;scene.add(o);return {p,c,g,m,n};};
+  const mark=layer(20000,11),hot=layer(8000,6);mark.m.opacity=.55;mark.m.blending=THREE.AdditiveBlending;
   const base=new Float32Array(N*3),clsC=new Float32Array(N*3);
   const rgb=h=>{h=h.replace('#','');return[parseInt(h.slice(0,2),16)/255,parseInt(h.slice(2,4),16)/255,parseInt(h.slice(4,6),16)/255];};
   let H1,H2,lastAct=null,lastView=null;
@@ -278,18 +280,21 @@ const visible=id=>{const e=document.getElementById(id);return e&&e.offsetParent!
 /* ============ ciclo ============ */
 function onReady(m){const ld=document.getElementById('loading');ld.style.transition='opacity .3s';ld.style.opacity=0;setTimeout(()=>ld.remove(),300);
   LAB.init();LEARN.init();CONSOLE.init();if(typeof COMP!=='undefined')COMP.init();resizeAll();}
+let markSig='';
 function onTick(m){
   const dt=Math.max(0,(m.t-simT)/1000);simT=m.t;speed=m.speed;
   if(!rates||dt<=0||dt>1)rates=JSON.parse(JSON.stringify(m.rates));else{const a=Math.min(1,dt/.12);for(const k in m.rates){if(!rates[k])rates[k]={L:0,R:0};rates[k].L+=(m.rates[k].L-rates[k].L)*a;rates[k].R+=(m.rates[k].R-rates[k].R)*a;}}
   nAct=m.nAct;total=m.total;
   updateFly(Math.min(.2,dt));updateInputs();pushHist();LEARN.tick(Math.min(200,dt*1000));LAB.refresh();CONSOLE.tick(dt*1000);if(typeof COMP!=='undefined')COMP.tick(dt*1000);
   if(!etho.length||etho[etho.length-1].b!==behavior)etho.push({t:simT,b:behavior});while(etho.length>1&&etho[1].t<simT-31000)etho.shift();
-  if(window.CLOUD)CLOUD.paint(m.act);
+  if(window.CLOUD){CLOUD.paint(m.act);const sig=LAB.constructs.map(c=>c.id+c.opsin+c.list.length).join('|');if(sig!==markSig){markSig=sig;
+    const OC={CsChrimson:'#E5484D',ChR2:'#3E63DD',GtACR1:'#30A46C',GtACR2:'#3E63DD'};CLOUD.setMarks(LAB.constructs.filter(c=>c.list.length).map(c=>({list:c.list.slice(0,5000),color:OC[c.opsin]||'#B83A68'})));}}
   const sp=speed>=.995?fmt(speed,1)+'×':fmt(speed,2)+'×';
   document.getElementById('sSpeed').textContent=sp;document.getElementById('pSpeed').textContent=sp;
   document.getElementById('sT').textContent=fmt(simT/1000,1)+' s';document.getElementById('pT').textContent=fmt(simT/1000,1)+' s';
   document.getElementById('sAct').textContent=fmt(nAct);document.getElementById('sSpk').textContent=fmt(total);
-  const hyper=nAct>5000;const ban=document.getElementById('banner');if(ban.hidden===hyper){ban.hidden=!hyper;if(hyper)log('warn','Hiperactividad: el modelo se saturó','#F5A524');}
+  let drv=0;if(META&&META.stim.luz){const g=META.stim.luz;for(const k of ['stim:luz:L','stim:luzlab:L'])if(sent[k]>0){drv+=g.L.length;break;}for(const k of ['stim:luz:R','stim:luzlab:R'])if(sent[k]>0){drv+=g.R.length;break;}}
+  const hyper=nAct-drv>5000; // los fotorreceptores estimulados por luz no cuentan como hiperactividadconst ban=document.getElementById('banner');if(ban.hidden===hyper){ban.hidden=!hyper;if(hyper)log('warn','Hiperactividad: el modelo se saturó','#F5A524');}
   renderPill();
 }
 function frame(){

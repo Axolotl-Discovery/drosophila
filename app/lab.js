@@ -21,7 +21,7 @@ const LIGHTS=[
    Todas necesitan retinal (ATR) en la comida: la mosca no fabrica suficiente. */
 const OPSINS={
   CsChrimson:{n:'CsChrimson',act:true,pk:590,ec50:50,d:'Canal de cationes (pico ~590 nm). Se usa con luz roja porque la mosca casi no la ve, aunque también responde al ámbar, al verde y algo al azul.',s:{rojo:.65,ambar:1,verde:.6,azul:.4}},
-  ChR2:{n:'ChR2',act:true,pk:470,ec50:800,d:'Canalrodopsina-2 (pico ~470 nm). Poca corriente: en moscas necesita luz azul intensa, y la mosca ve el azul.',s:{rojo:0,ambar:.03,verde:.3,azul:1}},
+  ChR2:{n:'ChR2',act:true,pk:470,ec50:4000,d:'Canalrodopsina-2 (pico ~470 nm). Poca corriente: en moscas necesita luz azul intensa, y la mosca ve el azul.',s:{rojo:0,ambar:.03,verde:.3,azul:1}},
   GtACR1:{n:'GtACR1',act:false,pk:515,ec50:3,d:'Canal de cloruro (pico ~515 nm). Con muy poca luz verde o azul silencia a la neurona.',s:{rojo:.003,ambar:.25,verde:1,azul:.7}},
   GtACR2:{n:'GtACR2',act:false,pk:470,ec50:8,d:'Canal de cloruro (pico ~470 nm). Silencia con luz azul; también algo con verde.',s:{rojo:0,ambar:.05,verde:.45,azul:1}},
 };
@@ -53,7 +53,7 @@ const LAB=(()=>{
     for(const c of constructs)if(c.list.length)worker.postMessage({type:'watch',key:'c'+c.id,list:c.list.slice(0,4000)});}
   // respuesta 0–1 de una construcción a las luces encendidas
   const resp=c=>{if(!retinal)return 0;const O=OPSINS[c.opsin];let E=0;for(const L of LIGHTS)if(lights[L.k])E+=O.s[L.k]*intensity;return E/(E+O.ec50);};
-  const TH_ACT=.05,TH_SIL=.5;
+  const TH_ACT=.15,TH_SIL=.5; // por debajo de TH_ACT la fotocorriente no alcanza para hacer disparar a la neurona
   function applySilence(want){const on=[],off=[];for(const i of want)if(!silencedNow.has(i))on.push(i);for(const i of silencedNow)if(!want.has(i))off.push(i);
     if(on.length)worker.postMessage({type:'silence',list:on,on:true});if(off.length)worker.postMessage({type:'silence',list:off,on:false});
     silencedNow.clear();for(const i of want)silencedNow.add(i);}
@@ -97,11 +97,11 @@ const LAB=(()=>{
         return `<div class="recipe" data-c="${c.id}"><div class="rrow">
           <button class="rnode neu${c.target?'':' empty'}" data-pk="${c.id}"><svg class="i sm"><use href="#i-dna"/></svg><span>${c.target?c.target.label:'Elegir neuronas'}</span></button>
           <span class="rarr"><svg class="i sm"><use href="#i-arrow-right"/></svg></span>
-          <select class="rnode" data-op="${c.id}" title="${O.d}">${opts}</select>
+          <select class="rnode" data-op="${c.id}" title="${O.d}" data-tip="${O.n}: pico ~${O.pk} nm">${opts}</select>
           <span class="rarr"><svg class="i sm"><use href="#i-arrow-right"/></svg></span>
           <span class="rstate${on?' on':''}" style="--lc:${lightCol(c)}"><svg class="i sm"><use href="#i-${O.act?'zap':'zap-off'}"/></svg></span>
           <button class="ibtn" data-del="${c.id}" title="Quitar"><svg class="i sm"><use href="#i-x"/></svg></button></div>
-          <div class="rmeta">${c.target?fmtN(c.list.length)+' neuronas · ':''}<span class="verb ${O.act?'act':'sil'}">${O.act?'activa':'silencia'}</span>&nbsp;· pico ${O.pk} nm<span class="resp" data-r="${c.id}"></span><span class="hz" data-hz="${c.id}">—</span></div></div>`;}).join('')+
+          <div class="rmeta">${c.target?fmtN(c.list.length)+' neuronas · ':''}<span class="verb ${O.act?'act':'sil'}">${O.act?'activa':'silencia'}</span><span class="resp" data-r="${c.id}"></span><span class="hz" data-hz="${c.id}">—</span></div></div>`;}).join('')+
         `<button class="btn btn-ghost sm" id="addC" style="width:100%;margin-top:2px"><svg class="i sm"><use href="#i-plus"/></svg>Añadir otra</button>`;
     }
     h=`<label class="atr${retinal?'':' off'}" data-tip="Las opsinas necesitan retinal (ATR). La mosca no lo fabrica: en el laboratorio se pone en su comida 1–3 días antes."><span class="atri"><svg class="i sm"><use href="#i-${retinal?'check':'x'}"/></svg></span><span><b>Comida con retinal (ATR)</b><small>${retinal?'Las opsinas pueden funcionar':'Sin retinal ninguna opsina responde a la luz'}</small></span><span class="sw"><input type="checkbox" id="atrSw" ${retinal?'checked':''}><i></i></span></label>`+h;
@@ -153,7 +153,7 @@ const LAB=(()=>{
     const box=document.getElementById('pkList');q=q.trim().toLowerCase();let h='';
     if(restrict&&restrict.types){h+='<h6>Disponibles en este reto</h6>'+restrict.types.map(t=>typeMeta.get(t)).filter(Boolean).map(typeRow).join('');}
     else if(q){const res=[];for(const t of typeMeta.values()){if(!allowed(t)||!passF(t))continue;if(t.t.toLowerCase().includes(q)||(!blind&&t.es&&t.es.toLowerCase().includes(q))||t.cln.toLowerCase().includes(q)||(NICE[t.t]||'').toLowerCase().includes(q))res.push(t);if(res.length>150)break;}
-      h=res.length?res.sort((a,b)=>blind?a.t.localeCompare(b.t):(b.es?1:0)-(a.es?1:0)).map(typeRow).join(''):'<p class="muted" style="text-align:center;margin-top:24px">Nada con ese nombre.</p>';}
+      h=res.length?res.sort((a,b)=>blind?a.t.localeCompare(b.t):(b.es?1:0)-(a.es?1:0)).map(typeRow).join(''):`<p class="muted" style="text-align:center;margin-top:24px;padding:0 16px">Nada con ese nombre.${blind?'<br>En los retos se busca por nombre de neurona o de clase, no por lo que hace.':''}</p>`;}
     else{const fam=blind?[]:CAT.famous.map(t=>typeMeta.get(t)).filter(t=>t&&allowed(t)&&passF(t));if(fam.length)h+='<h6>Famosas</h6>'+fam.map(typeRow).join('');
       h+='<h6>Catálogo</h6>';
       for(const sc of CAT.cat){if(restrict&&restrict.supers&&!restrict.supers.includes(sc.k))continue;if(pkF&&sc.k!==pkF)continue;

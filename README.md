@@ -6,7 +6,7 @@ Sandbox educativo de [Axolotl Discovery](https://axolotl-discovery.github.io/) p
 
 ## Qué hace
 - Simula el conectoma FlyWire v783 con el modelo de integración y disparo de Shiu y col. (2024, *Nature*), y traduce la actividad de las neuronas descendentes en conducta de una mosca en 3D.
-- **Laboratorio:** elige cualquier tipo de neurona del catálogo, ponle una opsina (CsChrimson, ChR2, GtACR1, GtACR2) y enciende luces de colores para activarla o silenciarla.
+- **Laboratorio:** elige cualquier tipo de neurona del catálogo, ponle una opsina (CsChrimson, ChR2, GtACR1, GtACR2) y enciende luces de 627, 590, 530 o 470 nm. Cada opsina responde según su espectro de acción y la irradiancia (µW/mm²); sin retinal (ATR) en la comida no responde, y la mosca ve las luces verde y azul. Los valores y sus fuentes están comentados en `app/lab.js`.
 - **Aprender:** ruta de lecciones y retos, de lo básico a experimentos de suficiencia y necesidad.
 - **Consola:** comandos en español para buscar neuronas, consultar conexiones, registrar actividad y escribir protocolos repetibles.
 - **Competencia:** modo para clase en la misma red local (hasta 10 equipos), con tablero en vivo y exportación de la telemetría (errores, pistas y secuencia de pasos).

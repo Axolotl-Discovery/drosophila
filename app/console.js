@@ -12,7 +12,7 @@ const CONSOLE=(()=>{
   let PROTOS={};try{PROTOS=JSON.parse(localStorage.getItem(PKEY)||'null')||null;}catch(e){}
   if(!PROTOS)PROTOS={
     'hambre de luz':'@nombre hambre de luz\n# MN9 con CsChrimson: la luz roja hace extender la probóscide\nactivar MN9\nrepetir 3\n  luz roja on\n  esperar 600 ms\n  luz roja off\n  esperar 800 ms\nfin\nmarcar listo',
-    'moonwalk':'@nombre moonwalk\n@semilla 7\nactivar MDN\nluz roja on al 80%\nesperar 2 s\nluz roja off\nconstrucciones quitar todas',
+    'moonwalk':'@nombre moonwalk\n@semilla 7\nactivar MDN\nluz roja on a 500\nesperar 2 s\nluz roja off\nconstrucciones quitar todas',
     'sombra y escape':'# ¿escapa ante la sombra? luego silencia la fibra gigante y repite\nsombra\nesperar 1500 ms\nsilenciar GF\nluz verde on\nesperar 300 ms\nsombra\nesperar 1500 ms\nluz verde off',
   };
   const saveProtos=()=>{try{localStorage.setItem(PKEY,JSON.stringify(PROTOS));}catch(e){}};
@@ -40,6 +40,9 @@ const CONSOLE=(()=>{
   function parseTarget(args){let side='',ops=null,rest=[];for(let i=0;i<args.length;i++){const a=args[i].toLowerCase();
       if(SIDE[a])side=SIDE[a];else if((a==='con'||a==='with')&&args[i+1]){ops=args[++i];}else rest.push(args[i]);}
     return {q:rest.join(' '),side,ops};}
+  // irradiancia en µW/mm²: «a 300», «al 300», «300uW», «1.5mW»
+  const irr=args=>{let v=null;const i=args.findIndex(x=>/^(a|al|at)$/i.test(x));const raw=i>=0?args[i+1]:args.find(x=>/^[\d.]+(uw|µw|mw)$/i.test(x));
+    if(raw!=null){v=parseFloat(raw);if(/mw/i.test(raw)||(args[i+2]&&/^mw/i.test(args[i+2])))v*=1000;}return v==null||isNaN(v)?null:Math.max(1,Math.min(3000,v));};
   const pct=args=>{const i=args.findIndex(a=>/^al$|^at$/i.test(a));let v=null;if(i>=0&&args[i+1])v=parseFloat(args[i+1]);else{const m=args.find(a=>/^\d+%$/.test(a));if(m)v=parseFloat(m);}return v==null?null:Math.max(5,Math.min(100,v))/100;};
   /* ---------- registro en vivo ---------- */
   const WATCH=new Map();
@@ -67,12 +70,12 @@ const CONSOLE=(()=>{
     print(`<span class="dim">Tab completa · ↑↓ historial · clic en un nombre para ver su info</span>`);},'Ayuda');
   def('atajos',['keys'],'atajos','Atajos de teclado',null,()=>{[['` o F2','abre / cierra la consola'],['Espacio','pausa'],['Esc','suelta la herramienta'],['Supr','borra el estímulo elegido'],['Tab','autocompleta'],['↑ ↓','historial']].forEach(([k,d])=>print(`<b>${k.padEnd(10)}</b> <span class="dim">${d}</span>`));},'Ayuda');
   def('buscar',['search','find'],'buscar <texto>','Busca tipos de neurona por nombre o función','free',a=>{const q=norm(a.join(' '));if(!q)return print('Escribe qué buscar. Ejemplo: '+cm('buscar azúcar'),'err');
-    const res=[];for(const t of LAB.typeMeta().values()){const hay=norm(t.t+' '+(t.es||'')+' '+t.cln+' '+(LAB.NICE[t.t]||''));if(hay.includes(q))res.push(t);}
-    if(!res.length)return print('Nada con eso.','warn');res.sort((a,b)=>(b.es?1:0)-(a.es?1:0));
-    res.slice(0,14).forEach(t=>print(`${nm(t.t)}  <span class="dim">${t.n} · ${esc(t.es||t.cln)}</span>`));if(res.length>14)print(`<span class="dim">…y ${res.length-14} más</span>`);},'Neuronas');
+    const res=[];for(const t of LAB.typeMeta().values()){const hay=norm(t.t+' '+(LAB.blind?'':(t.es||''))+' '+t.cln+' '+(LAB.NICE[t.t]||''));if(hay.includes(q))res.push(t);}
+    if(!res.length)return print('Nada con eso.'+(LAB.blind?' Durante un reto se busca solo por nombre o clase.':''),'warn');res.sort((a,b)=>LAB.blind?a.t.localeCompare(b.t):(b.es?1:0)-(a.es?1:0));
+    res.slice(0,14).forEach(t=>print(`${nm(t.t)}  <span class="dim">${t.n} · ${esc(LAB.blind?t.cln:(t.es||t.cln))}</span>`));if(res.length>14)print(`<span class="dim">…y ${res.length-14} más</span>`);},'Neuronas');
   def('info',['i'],'info <tipo>','Ficha de un tipo de neurona','type',a=>{const t=needType(a.join(' '));if(!t)return;
     print(`<b>${esc(niceName(t))}</b>${niceName(t)!==t.t?' <span class="dim">('+esc(t.t)+')</span>':''}`);
-    if(t.es)print(esc(t.es));print(`<span class="dim">${esc(t.scn)} › ${esc(t.cln)} · ${t.n} neuronas (${t.L} izq, ${t.R} der) · ${esc(t.nt||'?')}</span>`);
+    if(t.es&&!LAB.blind)print(esc(t.es));print(`<span class="dim">${esc(t.scn)} › ${esc(t.cln)} · ${t.n} neuronas (${t.L} izq, ${t.R} der) · ${esc(t.nt||'?')}</span>`);
     print(`${cm('activar '+t.t)} ${cm('silenciar '+t.t)} ${cm('conexiones '+t.t)} ${cm('registrar '+t.t)}`);},'Neuronas');
   def('conexiones',['conn','connections'],'conexiones <tipo> [entrada|salida]','A quién habla (o quién le habla)','type',async a=>{
     let dir='out';const k=a.findIndex(x=>/^(entrada|in|entradas|salida|out|salidas)$/i.test(x));if(k>=0){dir=/^(entrada|in|entradas)$/i.test(a[k])?'in':'out';a.splice(k,1);}
@@ -86,8 +89,7 @@ const CONSOLE=(()=>{
     const R=window.__restrict;
     const tg={kind:'type',key:t.t,label:niceName(t)+(side==='L'?' · izq':side==='R'?' · der':''),side,sc:t.sc};
     const c=LAB.addConstruct(tg,O);event('lab',`${O} en ${tg.label}`,'#B83A68');
-    const col=OPSINS[O].act?(O==='ChR2'?'azul':'roja'):(O==='GtACR1'?'verde':'azul');
-    print(`<span class="ok">✓</span> ${esc(O)} en ${nm(t.t)} · ${c.list.length} neuronas. Enciende la luz: ${cm('luz '+col+' on')}`);}
+    print(`<span class="ok">✓</span> ${esc(O)} en ${nm(t.t)} · ${c.list.length} neuronas · pico ${OPSINS[O].pk} nm. Ahora enciende una luz.`);}
   def('activar',['activate','act'],'activar <tipo> [izq|der] [con opsina]','Pone CsChrimson en esas neuronas','type',a=>construct(a,'CsChrimson'),'Optogenética');
   def('silenciar',['silence','sil'],'silenciar <tipo> [izq|der] [con opsina]','Pone GtACR1 en esas neuronas','type',a=>construct(a,'GtACR1'),'Optogenética');
   def('construcciones',['constructs','cons'],'construcciones [quitar n|todas]','Lista o quita construcciones',null,a=>{
@@ -95,11 +97,13 @@ const CONSOLE=(()=>{
       const n=parseInt(a[1]);const c=LAB.constructs[n-1];if(!c)return print('No existe esa construcción.','err');LAB.removeConstruct(c.id);return print('<span class="ok">✓</span> quitada');}
     if(!LAB.constructs.length)return print('No hay construcciones. Prueba '+cm('activar MN9'),'dim');
     LAB.constructs.forEach((c,i)=>{const O=OPSINS[c.opsin];print(`${i+1}. ${c.target?esc(c.target.label):'—'} <span class="dim">${c.opsin} · ${c.list.length} neuronas ·</span> ${O.act?'<span class="ok">activa</span>':'<span class="warn">silencia</span>'}`);});},'Optogenética');
-  def('luz',['light'],'luz <color|todas> on|off [al n%]','Enciende o apaga una luz del laboratorio','color',a=>{
-    const col=norm(a[0]||'');const st=(a[1]||'').toLowerCase();const p=pct(a);if(p!=null)LAB.setIntensity(p);
+  def('luz',['light'],'luz <color|todas> on|off [a n µW/mm²]','Enciende o apaga una luz del laboratorio','color',a=>{
+    const col=norm(a[0]||'');const st=(a[1]||'').toLowerCase();const I=irr(a);if(I!=null){LAB.setIntensity(I);print(`<span class="dim">irradiancia ${LAB.fmtI(LAB.intensity)}</span>`);}
     if(col==='off'||((col==='todas'||col==='all')&&st==='off')){LIGHTS.forEach(L=>LAB.setLight(L.k,false));return print('<span class="ok">✓</span> luces apagadas');}
     const k=LIGHT[col];if(!k){print(`Color desconocido. Usa: ${cm('luz roja on')} ${cm('luz verde on')} ${cm('luz azul on')} ${cm('luz ambar on')}`,'err');return;}
     const on=st?/^(on|si|sí|encender|1)$/.test(st):!LAB.lights[k];LAB.setLight(k,on);if(on&&!LAB.constructs.length)print('Ninguna neurona tiene opsina: la luz no hará nada. Prueba '+cm('activar MN9'),'warn');},'Optogenética');
+  def('retinal',['atr'],'retinal on|off','Pone o quita retinal (ATR) en la comida',null,a=>{const st=(a[0]||'').toLowerCase();
+    if(!st){print(`Retinal: ${LAB.retinal?'<span class="ok">sí</span>':'<span class="err">no</span>'}`);return;}LAB.setRetinal(/^(on|si|sí|1)$/.test(st));},'Optogenética');
   def('estimulo',['stim','estímulo'],'estimulo <tipo> [en x z] [al n%] | estimulo quitar','Coloca un estímulo en la arena','stim',a=>{
     if(/^(quitar|clear|todos)$/i.test(a[0]||'')){clearArena();return print('<span class="ok">✓</span> arena vacía');}
     const k=STIM[norm(a[0]||'')];if(!k)return print('Estímulos: '+Object.keys(ST).map(s=>cm('estimulo '+s)).join(' '),'err');
@@ -181,7 +185,7 @@ const CONSOLE=(()=>{
       for(const t of LAB.typeMeta().values()){if(t.t.toLowerCase().startsWith(nl))r.push({v:t.t,d:t.es||t.cln});if(r.length>30)break;}return r;}
     if(c.name==='conexiones'&&argi>0)return['entrada','salida'].filter(x=>x.startsWith(nl)).map(v=>({v,d:''}));
     if(c.arg==='type'&&argi>0){return ['izq','der','con'].concat(parts[parts.length-2]==='con'?Object.keys(OPSINS):[]).filter(x=>norm(x).startsWith(nl)).map(v=>({v,d:''}));}
-    if(c.name==='luz')return(argi===0?['roja','verde','azul','ambar','todas']:argi===1?['on','off']:['al']).filter(x=>x.startsWith(nl)).map(v=>({v,d:''}));
+    if(c.name==='luz')return(argi===0?['roja','verde','azul','ambar','todas']:argi===1?['on','off']:['a']).filter(x=>x.startsWith(nl)).map(v=>({v,d:''}));
     if(c.name==='estimulo'&&argi===0)return Object.keys(ST).concat(['quitar']).filter(x=>x.startsWith(nl)).map(v=>({v,d:ST[v]?ST[v].n:''}));
     if(c.name==='ejecutar')return Object.keys(PROTOS).filter(x=>x.toLowerCase().startsWith(v.slice(v.indexOf(' ')+1).toLowerCase())).map(x=>({v:x,d:'protocolo',full:true}));
     if(c.name==='ayuda')return Object.keys(C).filter(x=>x.startsWith(nl)).map(v=>({v,d:''}));

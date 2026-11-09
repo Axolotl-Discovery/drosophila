@@ -27,13 +27,31 @@
 "sub": "Caminar hacia atrás"
 },
 {
+"id": "r1b",
+"title": "Azul intenso",
+"ic": "lightbulb",
+"col": "#0E7C74",
+"diff": "medio",
+"def": false,
+"sub": "Probóscide con ChR2"
+},
+{
+"id": "r1c",
+"title": "Algo falla",
+"ic": "microscope",
+"col": "#0E7C74",
+"diff": "medio",
+"def": true,
+"sub": "Encontrar el error del experimento"
+},
+{
 "id": "r4",
-"title": "Valiente",
+"title": "Sin salto rápido",
 "ic": "zap-off",
 "col": "#6A4FC9",
 "diff": "medio",
 "def": true,
-"sub": "No escapar de 2 sombras"
+"sub": "Evitar el salto rápido ante 2 sombras"
 },
 {
 "id": "r5",
