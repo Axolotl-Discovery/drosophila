@@ -5,9 +5,19 @@ let wall0=0,sim0=0,lastPost=0,outAcc={},outT0=0;const watch=new Map();
    enciende la excitación recurrente, la actividad se mantiene sola para siempre aunque se quite el estímulo.
    Con estímulos normales disparan < ~1 100 neuronas no estimuladas cada 100 ms; saturado, ~9 500.
    Si más de SAT_N neuronas no estimuladas disparan durante SAT_MS, se borra el estado de voltaje (las entradas siguen). */
-const SAT_N=4000,SAT_MS=400;let inG=null,satMs=0,sat=false,satResets=0,seenF=null,nSeen=0,winMs=0;
+const SAT_N=4000,SAT_MS=400,IDLE_N=30,IDLE_MS=1000;let idleMs=0;let inG=null,satMs=0,sat=false,satResets=0,seenF=null,nSeen=0,winMs=0;
 function rebuildInG(){if(!inG)return;inG.fill(0);for(const g of B.grp.values())for(const i of g.list)inG[i]=1;}
 const post=(m,t)=>postMessage(m,t||[]);
+/* Corrección de signo en las interneuronas locales (LN) del lóbulo antenal (v4.4.1).
+   En los pesos, muchas LN cuyo neurotransmisor predicho es GABA, glutamato, serotonina o dopamina tienen sinapsis
+   excitadoras (las predicciones automáticas de FlyWire fallan a menudo en estas neuronas; en la mosca real la mayoría
+   de las LN son inhibidoras: Wilson y Laurent 2005, Chou y col. 2010). Con ellas excitadoras, cualquier olor encendía
+   todo el lóbulo antenal y el cuerpo fungoso (~10 000 neuronas) y el modelo se quedaba saturado.
+   Se vuelven inhibidoras solo sus sinapsis excitadoras. Las LN colinérgicas (LN excitadoras reales) no se tocan.
+   No cambia ninguna otra vía: azúcar, agua, amargo, sonido, sombra, antenas y los retos dan las mismas espigas. */
+function fixLocalNeurons(ptr,w,ctype,cat){const NT=new Set(['GABA','glutamato','serotonina','dopamina']);const fl=new Uint8Array(65536);let n=0;
+  for(const s of cat.cat)for(const cl of s.classes)if(cl.n==='Interneuronas locales del lóbulo antenal')for(const t of cl.types)if(NT.has(t[3]))fl[t[1]]=1;
+  for(let i=0;i<ctype.length;i++){if(!fl[ctype[i]])continue;for(let e=ptr[i];e<ptr[i+1];e++)if(w[e]>0){w[e]=-w[e];n++;}}return n;}
 async function load(){
   const get=async(f,prog)=>{const r=await fetch('data/'+f);if(!r.ok)throw new Error('No se pudo cargar '+f);
     const len=+r.headers.get('content-length')||0;if(!r.body||!len){const b=await r.arrayBuffer();prog&&prog(1);return b;}
@@ -17,8 +27,9 @@ async function load(){
   const ptr=new Uint32Array(await get('ptr.u32'));
   const postB=await get('post.i32',p=>post({type:'progress',msg:`Cargando ${meta.E.toLocaleString('es-MX')} conexiones… ${Math.round(p*100)}%`,p:.05+.55*p}));
   const wB=await get('w.i16',p=>post({type:'progress',msg:`Cargando pesos sinápticos… ${Math.round(p*100)}%`,p:.6+.3*p}));
-  B=new FlyBrain({N,ptr,post:new Int32Array(postB),w:new Int16Array(wB)});
   ctype=new Uint16Array(await get('ctype.u16'));
+  const w=new Int16Array(wB);fixLocalNeurons(ptr,w,ctype,await (await fetch('data/catalog.json')).json());
+  B=new FlyBrain({N,ptr,post:new Int32Array(postB),w});
   glow=new Float32Array(N);lastSpk=new Uint16Array(N);inG=new Uint8Array(N);seenF=new Uint8Array(N);
   post({type:'ready',N,E:meta.E});
   wall0=performance.now();sim0=0;outT0=0;loop();
@@ -45,10 +56,12 @@ function loop(){
       for(let i=0;i<N;i++){const d=(B.spk[i]-lastSpk[i])&0xffff;if(d>0){glow[i]=Math.min(1,glow[i]+.35+.15*d);if(!inG[i]&&!seenF[i]){seenF[i]=1;nSeen++;}}else glow[i]*=.82;if(glow[i]>.02){act[i]=glow[i]*255;nAct++;}}
       // neuronas no estimuladas distintas que dispararon en ventanas de ≥100 ms simulados
       winMs+=dtSim;let didReset=false;
-      if(winMs>=100){const satNow=nSeen*100/winMs>SAT_N;sat=satNow;satMs=satNow?satMs+winMs:0;winMs=0;nSeen=0;seenF.fill(0);}
+      if(winMs>=100){const satNow=nSeen*100/winMs>SAT_N;sat=satNow;satMs=satNow?satMs+winMs:0;
+        // sin ningún estímulo, la actividad debería apagarse sola; si sigue, es un circuito que se retroalimenta
+        const idleNow=B.grp.size===0&&nSeen>IDLE_N;idleMs=idleNow?idleMs+winMs:0;winMs=0;nSeen=0;seenF.fill(0);}
       const rates=outRates(dtSim);
       lastSpk.set(B.spk);outT0=B.tms;
-      if(satMs>=SAT_MS){B.reset();glow.fill(0);lastSpk.fill(0);satMs=0;winMs=0;nSeen=0;seenF.fill(0);satResets++;didReset=true;sat=false;}
+      if(satMs>=SAT_MS||idleMs>=IDLE_MS){B.reset();glow.fill(0);lastSpk.fill(0);didReset=satMs>=SAT_MS?'sat':'idle';satMs=0;idleMs=0;winMs=0;nSeen=0;seenF.fill(0);satResets++;sat=false;}
       const speed=dtSim/(now-lastPost);
       post({type:'tick',t:B.tms,speed,rates,nAct,total:B.totalSpikes,act,sat,satReset:didReset},[act.buffer]);
     }
@@ -62,7 +75,7 @@ onmessage=e=>{const m=e.data;
   else if(m.type==='group'){B.setGroup(m.key,m.list,m.rate);rebuildInG();}
   else if(m.type==='silence'){B.silence(m.list,m.on);}
   else if(m.type==='watch'){if(m.key==='*clear*'){for(const k of [...watch.keys()])if(!m.prefix||k.startsWith(m.prefix))watch.delete(k);return;}if(m.list&&m.list.length)watch.set(m.key,Int32Array.from(m.list));else watch.delete(m.key);}
-  else if(m.type==='reset'){B.reset();B.clearGroups();rebuildInG();satMs=0;sat=false;winMs=0;nSeen=0;seenF.fill(0);glow.fill(0);lastSpk.fill(0);outT0=B.tms;wall0=performance.now();sim0=B.tms;}
+  else if(m.type==='reset'){B.reset();B.clearGroups();rebuildInG();satMs=0;idleMs=0;sat=false;winMs=0;nSeen=0;seenF.fill(0);glow.fill(0);lastSpk.fill(0);outT0=B.tms;wall0=performance.now();sim0=B.tms;}
   else if(m.type==='seed'){if(m.seed==null){Math.random=rnd0;}else{let a=m.seed>>>0;Math.random=function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}}
   else if(m.type==='conn'){const agg=new Map(),ptr=B.ptr,po=B.post,w=B.w,T=m.ix;let tot=0;
     if(m.dir==='out'){for(let i=0;i<N;i++){if(ctype[i]!==T)continue;for(let j=ptr[i];j<ptr[i+1];j++){const t=ctype[po[j]];const a=agg.get(t)||[0,0];a[0]+=Math.abs(w[j]);a[1]+=w[j];agg.set(t,a);tot+=Math.abs(w[j]);}}}

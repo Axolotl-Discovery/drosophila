@@ -6,11 +6,17 @@ app.commandLine.appendSwitch('js-flags','--max-old-space-size=4096');
 protocol.registerSchemesAsPrivileged([{scheme:'app',privileges:{standard:true,secure:true,supportFetchAPI:true,corsEnabled:true,stream:true}}]);
 /* Instalación nueva = progreso nuevo.
    El progreso (lecciones, XP, tutorial) vive en el almacenamiento del navegador dentro de la carpeta de datos del
-   usuario, que el sistema no borra al eliminar la app. Cada descarga crea archivos nuevos, así que la fecha de
-   creación de package.json identifica la instalación: si cambia (se borró y se volvió a descargar, o es una versión
-   nueva), se borra el progreso guardado antes de abrir la ventana. */
+   usuario, que el sistema no borra al eliminar la app. Cada descarga crea archivos nuevos, así que el archivo
+   package.json identifica la instalación: si cambia (se borró y se volvió a descargar, o es una versión nueva),
+   se borra el progreso guardado antes de abrir la ventana. */
 async function freshInstallCheck(){
-  try{const st=fs.statSync(path.join(__dirname,'package.json'));const stamp=String(Math.round(st.birthtimeMs||st.mtimeMs));
+  try{
+    // En Mac, una app sin mover a Aplicaciones se abre desde una copia temporal (App Translocation): no se toca nada.
+    if(__dirname.includes('/AppTranslocation/'))return;
+    // Marca de la instalación: número de archivo (inodo / índice NTFS) + fecha de creación de package.json.
+    // La fecha sola no basta: al descomprimir el .zip, Windows y macOS copian las fechas del zip, así que dos
+    // descargas de la misma versión tenían la misma marca. El número de archivo cambia en cada extracción o copia.
+    const st=fs.statSync(path.join(__dirname,'package.json'),{bigint:true});const stamp=st.ino.toString()+'-'+(st.birthtimeMs||st.mtimeMs).toString();
     const f=path.join(app.getPath('userData'),'instalacion.json');let prev=null;try{prev=JSON.parse(fs.readFileSync(f,'utf8')).stamp;}catch(_){}
     if(prev===stamp)return;
     await session.defaultSession.clearStorageData({storages:['localstorage','indexdb','websql','serviceworkers','cachestorage']});

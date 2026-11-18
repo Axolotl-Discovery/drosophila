@@ -40,8 +40,8 @@ const ST={
   amargo:{ic:'leaf',n:'Amargo',col:'#6B8A2A',kind:'contact',g:'amargo',max:100,desc:'Activa 42 gustativas de amargo'},
   sonido:{ic:'volume-2',n:'Sonido',col:'#7C5CD6',kind:'dist',g:'sonido',max:140,L:3.5,desc:'Vibración en las antenas'},
   luz:{ic:'lightbulb',n:'Luz',col:'#E8B400',kind:'dist',g:'luz',max:60,L:6,desc:'La mosca camina hacia la luz (fototaxis)'},
-  vinagre:{ic:'wine',n:'Vinagre',col:'#2F855A',kind:'dist',g:'vinagre',max:60,L:3.5,desc:'Olor · puede saturar el modelo'},
-  co2:{ic:'wind',n:'CO₂',col:'#6B8299',kind:'dist',g:'co2',max:40,L:2.8,desc:'Olor · puede saturar el modelo'},
+  vinagre:{ic:'wine',n:'Vinagre',col:'#2F855A',kind:'dist',g:'vinagre',max:60,L:3.5,desc:'Olor · atrae a la mosca'},
+  co2:{ic:'wind',n:'CO₂',col:'#6B8299',kind:'dist',g:'co2',max:40,L:2.8,desc:'Olor · la mosca lo evita'},
 };
 const ACT={sombra:{ic:'cloud-moon',n:'Sombra',col:'#3A3A44',desc:'Una sombra se acerca'},antena:{ic:'hand',n:'Antenas',col:'#B07A3C',desc:'Toca las antenas'}};
 let placed=[],pid=1,tool=null,selId=null;
@@ -77,7 +77,7 @@ const BEH={
   avoid:{ic:'undo-2',n:'Rechaza',why:'Las gustativas de amargo activan las descendentes DNge067 y DNpe007: la mosca retira la probóscide y se aleja de lo amargo.',col:'#6B8A2A'},
   drink:{ic:'droplet',n:'Bebe agua',why:'Las gustativas de agua activan la descendente DNg67: la mosca extiende la probóscide para beber.',col:'#3A8FD8'},
   photo:{ic:'lightbulb',n:'Va hacia la luz',why:'Fototaxis. Los fotorreceptores sí se activan en el modelo, pero el conectoma del cerebro no incluye la vía completa hasta las patas: la caminata hacia la luz se anima según cuánta luz recibe cada ojo.',col:'#E8B400'},
-  walk:{ic:'footprints',n:'Camina',why:'DNa02, DNa01 o P9 están activas; la diferencia entre lados la hace girar.',col:'#0E7C74'},
+  walk:{ic:'footprints',n:'Camina',why:'DNa02, DNa01 o P9 están activas; la diferencia entre lados la hace girar. Con olores el modelo decide caminar, pero la dirección (hacia el vinagre, lejos del CO₂) se anima: en el modelo el olor siempre activa más el lado izquierdo.',col:'#0E7C74'},
   rest:{ic:'moon-star',n:'En reposo',why:'Ninguna neurona de salida supera su umbral.',col:'#8C889B'},
 };
 const TH={GF:30,DNg11:15,MN9:20,MDN:40,AMARGO:12,AGUA:6,WALK:20};
@@ -90,12 +90,14 @@ function decide(){
   if(mx('MN9')>(behavior==='per'?TH.MN9*.5:TH.MN9))return 'per'; // histéresis: no parpadea con «Bebe agua» sobre azúcar
   if(mx('MDN')>TH.MDN)return 'back';
   if(mx('AMARGO_DN')>TH.AMARGO)return 'avoid';
-  if(mx('AGUA_DN')>TH.AGUA&&Math.min(rates.AGUA_DN.L,rates.AGUA_DN.R)>3&&mx('MN9')<5)return 'drink'; // el azúcar también activa DNg67, pero de un solo lado y junto con MN9
+  if(mx('AGUA_DN')>TH.AGUA&&Math.min(rates.AGUA_DN.L,rates.AGUA_DN.R)>5&&mx('MN9')<5)return 'drink'; // el azúcar también activa DNg67, pero de un solo lado y junto con MN9
   const wL=rates.DNa02.L+rates.DNa01.L+rates.P9.L,wR=rates.DNa02.R+rates.DNa01.R+rates.P9.R;
   if(wL+wR>TH.WALK)return 'walk';
   if(nearestLight())return 'photo';
   return 'rest';
 }
+// olor más cercano que la mosca percibe (vinagre atrae, CO₂ repele)
+function odorSource(){let best=null;for(const s of placed)if((s.type==='vinagre'||s.type==='co2')&&s.int>.05){const d=Math.hypot(s.x-fly.x,s.z-fly.z);if(!best||d<best.d)best={s,d};}return best;}
 // luz del arenero más cercana que la mosca aún no alcanzó (los fotorreceptores reciben su señal)
 function nearestLight(){let best=null,bd=1e9;for(const s of placed)if(s.type==='luz'&&s.int>.05){const d=Math.hypot(s.x-fly.x,s.z-fly.z);if(d<bd){bd=d;best=s;}}
   return best&&bd>1.3+1.2*best.int?best:null;}
@@ -106,12 +108,17 @@ function updateFly(dt){
     if(u>.05)fly.h=Math.atan2(-(A.z1-A.z0),A.x1-A.x0);fly.y=Math.sin(Math.min(1,u*1.1)*Math.PI)*2.6;if(A.t>A.T){fly.air=null;fly.y=0;fly.refr=.5;}
     b=A.t<A.T*.12?'escape':'fly';}
   fly.refr-=dt;
+  // olores: el modelo decide caminar (DNa02/DNa01), pero su lado no sigue al olor (siempre gira a la izquierda),
+  // así que la dirección se anima: hacia el vinagre, lejos del CO₂. Cerca del vinagre se detiene.
+  fly.odor=null;if(b==='walk'&&!(typeof LAB!=='undefined'&&LAB.activeActivators().length)){const o=odorSource();if(o){fly.odor=o;if(o.s.type==='vinagre'&&o.d<1.1)b='rest';}}
   if(b==='avoid')fly.flee=1.2;else if(b==='rest'&&fly.flee>0)b='avoid'; // tras probar lo amargo sigue alejándose un momento
   fly.flee-=dt;
   if(b!==behavior){const prev=behavior;behavior=b;behSince=simT;if(!(prev==='escape'&&b==='fly')){log('beh',`${BEH[prev].n} → ${BEH[b].n}`,BEH[b].col);tel('beh',{b:BEH[b].n});}}
   if(b==='walk'||b==='back'){const wL=rates.DNa02.L+rates.DNa01.L+rates.P9.L,wR=rates.DNa02.R+rates.DNa01.R+rates.P9.R;
     const v=b==='back'?-.9:Math.min(2,.4+(wL+wR)/120);const turn=b==='back'?0:(wR-wL)/(wL+wR+30);
-    fly.h-=turn*3*dt;fly.x+=Math.cos(fly.h)*v*dt;fly.z-=Math.sin(fly.h)*v*dt;fly.phase+=dt*(Math.abs(v)*4.5+2)*Math.sign(v);
+    if(b==='walk'&&fly.odor){const o=fly.odor;const th=Math.atan2(-(o.s.z-fly.z),o.s.x-fly.x)+(o.s.type==='co2'?Math.PI:0);
+      const dh=((th-fly.h+Math.PI)%(2*Math.PI)+2*Math.PI)%(2*Math.PI)-Math.PI;fly.h+=Math.max(-2.5*dt,Math.min(2.5*dt,dh));}
+    else fly.h-=turn*3*dt;fly.x+=Math.cos(fly.h)*v*dt;fly.z-=Math.sin(fly.h)*v*dt;fly.phase+=dt*(Math.abs(v)*4.5+2)*Math.sign(v);
     const r2=Math.hypot(fly.x,fly.z);if(r2>ARENA.R-.7){fly.x*=(ARENA.R-.7)/r2;fly.z*=(ARENA.R-.7)/r2;fly.h+=Math.PI*dt;}}
   if(b==='avoid'){ // se aleja de la fuente amarga más cercana
     let best=null,bd=1e9;for(const s of placed)if(s.type==='amargo'){const d=Math.hypot(s.x-fly.x,s.z-fly.z);if(d<bd){bd=d;best=s;}}
@@ -139,7 +146,7 @@ function chain(){
   if(b==='rest')return [];
   const c=[];if(src)c.push({t:src,on:true});
   if(b==='photo'){c.push({t:'fotorreceptores',on:true});c.push({t:'patas',on:true});return c;}
-  if(b==='walk'){const wL=rates.DNa02.L+rates.DNa01.L+rates.P9.L,wR=rates.DNa02.R+rates.DNa01.R+rates.P9.R;c.push({t:'DNa02',on:true});c.push({t:wR>wL*1.3?'gira →':wL>wR*1.3?'← gira':'recto',on:true});}
+  if(b==='walk'){const wL=rates.DNa02.L+rates.DNa01.L+rates.P9.L,wR=rates.DNa02.R+rates.DNa01.R+rates.P9.R;if(fly.odor&&!lbl)c.push({t:fly.odor.s.type==='vinagre'?'Vinagre':'CO₂',on:true});c.push({t:'DNa02',on:true});c.push({t:fly.odor&&!lbl?(fly.odor.s.type==='vinagre'?'hacia el olor':'lejos del olor'):wR>wL*1.3?'gira →':wL>wR*1.3?'← gira':'recto',on:true});}
   else{const kn={AGUA_DN:'DNg67',AMARGO_DN:'DNge067'}[key]||key;if(key&&!(src&&src.split(/[ ·]/)[0]===kn)&&!(src==='Fibra gigante'&&key==='GF'))c.push({t:kn,on:mx(key)>5});c.push({t:{escape:'salto',fly:'vuelo',groom:'patas',per:'probóscide',back:'patas',drink:'probóscide',avoid:'patas'}[b],on:true});}
   return c;
 }
@@ -319,8 +326,8 @@ function onTick(m){
   document.getElementById('sT').textContent=fmt(simT/1000,1)+' s';document.getElementById('pT').textContent=fmt(simT/1000,1)+' s';
   document.getElementById('sAct').textContent=fmt(nAct);document.getElementById('sSpk').textContent=fmt(total);
   // el worker vigila la saturación (actividad recurrente que se mantiene sola) y la reinicia si dura
-  saturated=!!m.sat;if(m.satReset)log('warn','Hiperactividad: el modelo se saturó y se reinició la actividad','#F5A524');
-  if(saturated||m.satReset)satUntil=simT+1500; // el aviso se queda un momento para no parpadear
+  saturated=!!m.sat;if(m.satReset==='sat')log('warn','Hiperactividad: el modelo se saturó y se reinició la actividad','#F5A524');else if(m.satReset==='idle')log('sys','Quedaba actividad sin ningún estímulo: se reinició','#8C889B');
+  if(saturated||m.satReset==='sat')satUntil=simT+1500; // el aviso se queda un momento para no parpadear
   const hyper=simT<satUntil;
   const ban=document.getElementById('banner');if(ban.hidden===hyper)ban.hidden=!hyper;
   renderPill();
