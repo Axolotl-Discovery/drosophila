@@ -53,6 +53,7 @@
     <div class="menu" id="menu" hidden>
       <button id="mAbout"><svg class="i sm"><use href="#i-info"/></svg>Acerca del modelo</button>
       <button id="mComp"><svg class="i sm"><use href="#i-trophy"/></svg>Competencia</button>
+      <button id="mTour"><svg class="i sm"><use href="#i-circle-help"/></svg>Ver tutorial</button>
       <button id="mKeys"><svg class="i sm"><use href="#i-square-terminal"/></svg>Atajos de teclado</button>
       <hr><button id="mReset" style="color:var(--err)"><svg class="i sm"><use href="#i-trash-2"/></svg>Borrar progreso</button>
     </div>
@@ -75,7 +76,7 @@
       </div>
     </div>
     <div class="hint" id="hint" style="opacity:0"></div>
-    <div class="alert" id="banner" hidden><svg class="i sm"><use href="#i-zap"/></svg><span id="bannerTxt">Hiperactividad: el modelo se saturó.</span><button class="btn btn-secondary sm" id="bannerReset">Reiniciar</button></div>
+    <div class="alert" id="banner" hidden><svg class="i sm"><use href="#i-zap"/></svg><span id="bannerTxt">Hiperactividad: el modelo se saturó. Se reinicia solo; si se repite, quita el estímulo.</span><button class="btn btn-secondary sm" id="bannerReset">Reiniciar</button></div>
     <div class="dock" id="dock" role="toolbar" aria-label="Estímulos"></div>
     <div class="pop" id="pop" hidden>
       <h5 id="popT"></h5>
@@ -85,7 +86,7 @@
     </div>
     <div id="confetti"></div>
     <div class="clb" id="clb" hidden></div><div class="cbig" id="cbig" hidden></div><div class="cmsg" id="cmsg" hidden></div>
-    <div class="toast" id="win" hidden><div class="wic"><svg class="i lg"><use href="#i-trophy"/></svg></div><h3 id="winT">¡Lo lograste!</h3><div class="wxp" id="winXP">+20 XP</div><p id="winEx"></p><button class="btn btn-ok lg" id="winOk" style="width:100%">Continuar</button></div>
+    <div class="toast" id="win" hidden><div class="wic"><svg class="i lg"><use href="#i-trophy"/></svg></div><h3 id="winT">¡Lo lograste!</h3><div class="wxp" id="winXP">+20 XP</div><p id="winEx"></p><button class="btn btn-ok lg" id="winOk" style="width:100%">Continuar</button><button class="btn btn-ghost sm" id="winPath" style="width:100%;margin-top:8px">Volver a la ruta</button></div>
   </main>
 
   <aside class="panel" id="panel">
@@ -138,5 +139,6 @@
 <script src="learn.js"></script>
 <script src="console.js"></script>
 <script src="comp.js"></script>
+<script src="tour.js"></script>
 </body>
 </html>

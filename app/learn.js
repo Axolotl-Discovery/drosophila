@@ -106,7 +106,7 @@ const LEARN=(()=>{
       h+=`<div class="unit" style="--uc:${u.c};--ucp:${u.cp}"><div class="uhead"><span class="un">${ui+1}</span><b>${u.t}</b><small>${nd}/${u.ls.length}</small></div>
         <div class="uprog"><i style="width:${nd/u.ls.length*100}%"></i></div><div class="path">`;
       u.ls.forEach((l,k)=>{const done=!!S.done[l.id],op=unlocked(l),cur=op&&!done&&firstCur;if(cur)firstCur=false;const off=[0,1,1.6,1,0,-1,-1.6,-1][k%8];
-        h+=`<div class="pnode" style="--off:${off}"><button class="node${done?' done':cur?' current':op?'':' locked'}" data-id="${l.id}" ${op?'':'disabled'} aria-label="${l.title}">${ico(done?'check':op?l.ic:'lock')}</button><span class="pl">${l.title}</span>${cur?`<button class="btn btn-primary sm start" data-id="${l.id}">Empezar</button>`:''}</div>`;});
+        h+=`<div class="pnode" style="--off:${off}"><button class="node${done?' done':cur?' current':op?'':' locked'}" data-id="${l.id}" ${op?'':'disabled'} aria-label="${l.title}">${ico(done?'check':op?l.ic:'lock')}</button><span class="pl">${l.title}</span>${done?`<span class="okl">✓ ${l.type==='quiz'&&S.done[l.id]<1?'Aprobada · '+Math.round(S.done[l.id]*100)+'%':'Completada'}</span>`:''}${cur?`<button class="btn btn-primary sm start" data-id="${l.id}">Empezar</button>`:''}</div>`;});
       h+='</div></div>';});
     el.innerHTML=h;
     el.querySelectorAll('[data-id]').forEach(b=>b.onclick=()=>open(ALL.find(l=>l.id===b.dataset.id)));
@@ -132,21 +132,37 @@ const LEARN=(()=>{
         else{step++;drawLesson();}};}
   }
   document.getElementById('lsClose').onclick=()=>{modal().hidden=true;};
-  function finish(l,score){modal().hidden=true;const first=!S.done[l.id];const xp=first?Math.round(l.xp*(.5+.5*score)):5;S.xp+=xp;S.done[l.id]=Math.max(S.done[l.id]||0,score);bumpStreak();save();
+  const PASS=.6; // aciertos mínimos para aprobar un quiz
+  function finish(l,score){modal().hidden=true;
+    if(l.type==='quiz'&&score<PASS){fail(l,score);return;}
+    const first=!S.done[l.id];const xp=first?Math.round(l.xp*(.5+.5*score)):5;S.xp+=xp;S.done[l.id]=Math.max(S.done[l.id]||0,score);bumpStreak();save();
     celebrate(l,xp,l.type==='quiz'?`Acertaste ${Math.round(score*100)}%`:'',l.explain||'');renderPath();}
-  function celebrate(l,xp,sub,ex){const w=document.getElementById('win');w.hidden=false;stats();
+  const nextOf=l=>{const i=ALL.indexOf(l);return i>=0&&i<ALL.length-1?ALL[i+1]:null;};
+  let winNext=null,winRetry=null;
+  function setWinButtons(next,retry){winNext=next;winRetry=retry;const b=document.getElementById('winOk');
+    b.textContent=retry?'Intentar de nuevo':next?'Siguiente: '+next.title:'Volver a la ruta';document.getElementById('winPath').hidden=!(next||retry);}
+  function fail(l,score){const w=document.getElementById('win');w.hidden=false;w.classList.add('fail');
+    document.querySelector('#win .wic use').setAttribute('href','#i-rotate-ccw');
+    document.getElementById('winT').textContent='Todavía no';document.getElementById('winXP').textContent='';
+    document.getElementById('winEx').textContent=`Acertaste ${Math.round(score*100)}%. Necesitas ${PASS*100}% para aprobar «${l.title}» y desbloquear la siguiente lección.`;
+    setWinButtons(null,l);if(typeof log==='function')log('sys',`${l.title}: ${Math.round(score*100)}%, aún sin aprobar`,'#8C889B');}
+  function celebrate(l,xp,sub,ex){const w=document.getElementById('win');w.hidden=false;w.classList.remove('fail');stats();
+    document.querySelector('#win .wic use').setAttribute('href','#i-trophy');setWinButtons(nextOf(l),null);
     document.getElementById('winT').textContent=l.type==='reto'?'¡Reto superado!':'¡Lección lista!';
     document.getElementById('winXP').textContent='+'+xp+' XP';document.getElementById('winEx').textContent=sub?sub+' · '+ex:ex;
     if(typeof log==='function')log('win',`${l.title} superado · +${xp} XP`,'#30A46C');
     const cf=document.getElementById('confetti');cf.innerHTML=Array.from({length:46},(_,k)=>`<i style="left:${Math.random()*100}%;background:${['#E5484D','#F5A524','#30A46C','#3E63DD','#B83A68'][k%5]};animation-delay:${Math.random()*.4}s;transform:rotate(${Math.random()*360}deg)"></i>`).join('');
     setTimeout(()=>cf.innerHTML='',2600);}
-  document.getElementById('winOk').onclick=()=>{document.getElementById('win').hidden=true;setPanel('learn');renderPath();};
+  // al aprobar se pasa directo a la siguiente lección (o se repite la que no se aprobó)
+  document.getElementById('winOk').onclick=()=>{document.getElementById('win').hidden=true;const n=winRetry||winNext;
+    if(n&&unlocked(n)){if(n.type!=='reto')setPanel('learn');renderPath();open(n);}else{setPanel('learn');renderPath();}};
+  document.getElementById('winPath').onclick=()=>{document.getElementById('win').hidden=true;setPanel('learn');renderPath();};
   /* ---------- retos ---------- */
   let CH=null;
   function startChallenge(l,comp){
     resetWorld();LAB.reset();LAB.setRestrict(l.allow,true);
     CH={l,comp:comp||null,hintSeen:false,t0:simT,acc:0,ok:false,ev:0,evOk:0,evWindow:null,nextEv:simT+1800,turn:0,lastH:fly.h,backAcc:0,explored:{},lastSig:''};
-    if(l.goal.setup==='azucar')setTimeout(()=>placeStim('azucar',-1.85,0,1,true),100);
+    if(l.goal.setup==='azucar')setTimeout(()=>placeStim('azucar',-1.85,0,1,true,true),100);
     if(l.goal.setup==='sinATR')setTimeout(()=>{const t=LAB.typeMeta().get('MDN');LAB.setRetinal(false);LAB.addConstruct({kind:'type',key:'MDN',label:'MDN',side:'',sc:t.sc},'CsChrimson');LAB.setLight('rojo',true);},150);
     setPanel('lab');drawCard();const h=document.getElementById('hint');if(h)h.style.opacity=0;if(typeof CONSOLE!=='undefined')CONSOLE.markChallenge();if(l.goal.via==='console')openDrawer('con');if(l.goal.via==='proto')openDrawer('proto');
   }

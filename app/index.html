@@ -178,6 +178,9 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 @keyframes ring{50%{outline-offset:8px;outline-color:color-mix(in srgb,var(--uc) 10%,transparent)}}
 .pnode .pl{font:600 13px/1.2 var(--f-ui);color:var(--t2);text-align:center;max-width:150px}
 .pnode .start{margin-top:-2px}
+.pnode .okl{font:700 11.5px var(--f-ui);color:var(--ok);margin-top:-4px}
+.toast.fail .wic{background:var(--s3);color:var(--err)}
+.toast.fail .wxp{display:none}
 /* lección dentro del panel */
 .lesson{position:absolute;inset:0;background:var(--s1);z-index:10;display:flex;flex-direction:column;padding:18px 20px 20px}
 .lhead{display:flex;align-items:center;gap:10px}
@@ -627,6 +630,7 @@ details.g2{margin-left:10px}details.g2 .grp{font-weight:600;font-size:13.5px}
     <div class="menu" id="menu" hidden>
       <button id="mAbout"><svg class="i sm"><use href="#i-info"/></svg>Acerca del modelo</button>
       <button id="mComp"><svg class="i sm"><use href="#i-trophy"/></svg>Competencia</button>
+      <button id="mTour"><svg class="i sm"><use href="#i-circle-help"/></svg>Ver tutorial</button>
       <button id="mKeys"><svg class="i sm"><use href="#i-square-terminal"/></svg>Atajos de teclado</button>
       <hr><button id="mReset" style="color:var(--err)"><svg class="i sm"><use href="#i-trash-2"/></svg>Borrar progreso</button>
     </div>
@@ -649,7 +653,7 @@ details.g2{margin-left:10px}details.g2 .grp{font-weight:600;font-size:13.5px}
       </div>
     </div>
     <div class="hint" id="hint" style="opacity:0"></div>
-    <div class="alert" id="banner" hidden><svg class="i sm"><use href="#i-zap"/></svg><span id="bannerTxt">Hiperactividad: el modelo se saturó.</span><button class="btn btn-secondary sm" id="bannerReset">Reiniciar</button></div>
+    <div class="alert" id="banner" hidden><svg class="i sm"><use href="#i-zap"/></svg><span id="bannerTxt">Hiperactividad: el modelo se saturó. Se reinicia solo; si se repite, quita el estímulo.</span><button class="btn btn-secondary sm" id="bannerReset">Reiniciar</button></div>
     <div class="dock" id="dock" role="toolbar" aria-label="Estímulos"></div>
     <div class="pop" id="pop" hidden>
       <h5 id="popT"></h5>
@@ -659,7 +663,7 @@ details.g2{margin-left:10px}details.g2 .grp{font-weight:600;font-size:13.5px}
     </div>
     <div id="confetti"></div>
     <div class="clb" id="clb" hidden></div><div class="cbig" id="cbig" hidden></div><div class="cmsg" id="cmsg" hidden></div>
-    <div class="toast" id="win" hidden><div class="wic"><svg class="i lg"><use href="#i-trophy"/></svg></div><h3 id="winT">¡Lo lograste!</h3><div class="wxp" id="winXP">+20 XP</div><p id="winEx"></p><button class="btn btn-ok lg" id="winOk" style="width:100%">Continuar</button></div>
+    <div class="toast" id="win" hidden><div class="wic"><svg class="i lg"><use href="#i-trophy"/></svg></div><h3 id="winT">¡Lo lograste!</h3><div class="wxp" id="winXP">+20 XP</div><p id="winEx"></p><button class="btn btn-ok lg" id="winOk" style="width:100%">Continuar</button><button class="btn btn-ghost sm" id="winPath" style="width:100%;margin-top:8px">Volver a la ruta</button></div>
   </main>
 
   <aside class="panel" id="panel">
@@ -723,5 +727,6 @@ details.g2{margin-left:10px}details.g2 .grp{font-weight:600;font-size:13.5px}
 <script src="learn.js"></script>
 <script src="console.js"></script>
 <script src="comp.js"></script>
+<script src="tour.js"></script>
 </body>
 </html>

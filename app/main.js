@@ -1,8 +1,21 @@
-const {app,BrowserWindow,protocol,net,Menu,shell,ipcMain}=require('electron');
+const {app,BrowserWindow,protocol,net,Menu,shell,ipcMain,session}=require('electron');
+const fs=require('fs');
 const http=require('http');
 const path=require('path');const {pathToFileURL}=require('url');
 app.commandLine.appendSwitch('js-flags','--max-old-space-size=4096');
 protocol.registerSchemesAsPrivileged([{scheme:'app',privileges:{standard:true,secure:true,supportFetchAPI:true,corsEnabled:true,stream:true}}]);
+/* Instalación nueva = progreso nuevo.
+   El progreso (lecciones, XP, tutorial) vive en el almacenamiento del navegador dentro de la carpeta de datos del
+   usuario, que el sistema no borra al eliminar la app. Cada descarga crea archivos nuevos, así que la fecha de
+   creación de package.json identifica la instalación: si cambia (se borró y se volvió a descargar, o es una versión
+   nueva), se borra el progreso guardado antes de abrir la ventana. */
+async function freshInstallCheck(){
+  try{const st=fs.statSync(path.join(__dirname,'package.json'));const stamp=String(Math.round(st.birthtimeMs||st.mtimeMs));
+    const f=path.join(app.getPath('userData'),'instalacion.json');let prev=null;try{prev=JSON.parse(fs.readFileSync(f,'utf8')).stamp;}catch(_){}
+    if(prev===stamp)return;
+    await session.defaultSession.clearStorageData({storages:['localstorage','indexdb','websql','serviceworkers','cachestorage']});
+    fs.mkdirSync(path.dirname(f),{recursive:true});fs.writeFileSync(f,JSON.stringify({stamp,version:app.getVersion(),fecha:new Date().toISOString()}));
+  }catch(e){console.log('freshInstallCheck',e);}}
 function createWindow(){
   const win=new BrowserWindow({width:1600,height:960,minWidth:1100,minHeight:700,title:'Drosophila — Axolotl Discovery',backgroundColor:'#F3F3F3',autoHideMenuBar:true,
     webPreferences:{contextIsolation:true,nodeIntegration:false,backgroundThrottling:false,preload:path.join(__dirname,'preload.js')}});
@@ -43,7 +56,8 @@ ipcMain.on('comp:sse:open',(e,{id,url})=>{const wc=e.sender;let closed=false,req
 ipcMain.on('comp:sse:close',(e,{id})=>{const f=sses.get(id);if(f){f();sses.delete(id);}});
 app.on('before-quit',()=>{if(host)host.stop();});
 
-app.whenReady().then(()=>{
+app.whenReady().then(async()=>{
+  await freshInstallCheck();
   protocol.handle('app',req=>{const u=new URL(req.url);let p=decodeURIComponent(u.pathname);if(p==='/'||!p)p='/index.html';
     const file=path.normalize(path.join(__dirname,p));if(!file.startsWith(__dirname))return new Response('no',{status:403});
     return net.fetch(pathToFileURL(file).toString());});

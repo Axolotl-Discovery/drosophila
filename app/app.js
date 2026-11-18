@@ -39,7 +39,7 @@ const ST={
   agua:{ic:'droplet',n:'Agua',col:'#3A8FD8',kind:'contact',g:'agua',max:100,desc:'Activa 30 gustativas de agua'},
   amargo:{ic:'leaf',n:'Amargo',col:'#6B8A2A',kind:'contact',g:'amargo',max:100,desc:'Activa 42 gustativas de amargo'},
   sonido:{ic:'volume-2',n:'Sonido',col:'#7C5CD6',kind:'dist',g:'sonido',max:140,L:3.5,desc:'Vibración en las antenas'},
-  luz:{ic:'lightbulb',n:'Luz',col:'#E8B400',kind:'dist',g:'luz',max:60,L:6,desc:'Fotorreceptores · sin efecto en el modelo'},
+  luz:{ic:'lightbulb',n:'Luz',col:'#E8B400',kind:'dist',g:'luz',max:60,L:6,desc:'La mosca camina hacia la luz (fototaxis)'},
   vinagre:{ic:'wine',n:'Vinagre',col:'#2F855A',kind:'dist',g:'vinagre',max:60,L:3.5,desc:'Olor · puede saturar el modelo'},
   co2:{ic:'wind',n:'CO₂',col:'#6B8299',kind:'dist',g:'co2',max:40,L:2.8,desc:'Olor · puede saturar el modelo'},
 };
@@ -54,13 +54,13 @@ const fwd=h=>[Math.cos(h),-Math.sin(h)],rightV=h=>[Math.sin(h),Math.cos(h)];
 function relTo(sx,sz){const hx=fly.x+Math.cos(fly.h)*.55,hz=fly.z-Math.sin(fly.h)*.55;const dx=sx-hx,dz=sz-hz,d=Math.hypot(dx,dz);const f=fwd(fly.h),r=rightV(fly.h);return {d,rel:Math.atan2(dx*r[0]+dz*r[1],dx*f[0]+dz*f[1])};}
 const fall=(d,L)=>1/(1+(d/L)*(d/L));
 const optoOn={};
-let contactType=null;
+let contactType=null,contactStim=null,saturated=false,satUntil=0;
 function updateInputs(){
   if(!META)return;
   const want={};const add=(key,list,rate)=>{want[key]={list,rate:Math.max((want[key]||{}).rate||0,rate)};};
-  contactType=null;
+  contactType=null;contactStim=null;
   if(!fly.air)for(const s of placed){const S=ST[s.type];const {d,rel}=relTo(s.x,s.z);const g=META.stim[S.g];
-    if(S.kind==='contact'){if(d<.62){contactType=s.type;add('stim:'+S.g+':L',g.L,S.max*s.int);add('stim:'+S.g+':R',g.R,S.max*s.int);}}
+    if(S.kind==='contact'){if(d<.62){contactType=s.type;contactStim=s;add('stim:'+S.g+':L',g.L,S.max*s.int);add('stim:'+S.g+':R',g.R,S.max*s.int);}}
     else{const wR=.5+.45*Math.sin(rel),f=fall(d,S.L)*s.int*S.max;add('stim:'+S.g+':L',g.L,f*Math.min(1,2*(1-wR)));add('stim:'+S.g+':R',g.R,f*Math.min(1,2*wR));}}
   if(loom){const k=Math.min(1,(simT-loom.t0)/900);const r=30+170*k*k;const g=META.stim.sombra;add('stim:sombra:L',g.L,r*(loom.side<0?1:.25));add('stim:sombra:R',g.R,r*(loom.side>0?1:.25));if(simT-loom.t0>950)loom=null;}
   if(antT>0&&simT<antT){const g=META.stim.antena;add('stim:antena:L',g.L,140);add('stim:antena:R',g.R,140);}
@@ -76,27 +76,32 @@ const BEH={
   back:{ic:'undo-2',n:'Camina hacia atrás',why:'MDN (moonwalker) está activa.',col:'#7C5CD6'},
   avoid:{ic:'undo-2',n:'Rechaza',why:'Las gustativas de amargo activan las descendentes DNge067 y DNpe007: la mosca retira la probóscide y se aleja de lo amargo.',col:'#6B8A2A'},
   drink:{ic:'droplet',n:'Bebe agua',why:'Las gustativas de agua activan la descendente DNg67: la mosca extiende la probóscide para beber.',col:'#3A8FD8'},
+  photo:{ic:'lightbulb',n:'Va hacia la luz',why:'Fototaxis. Los fotorreceptores sí se activan en el modelo, pero el conectoma del cerebro no incluye la vía completa hasta las patas: la caminata hacia la luz se anima según cuánta luz recibe cada ojo.',col:'#E8B400'},
   walk:{ic:'footprints',n:'Camina',why:'DNa02, DNa01 o P9 están activas; la diferencia entre lados la hace girar.',col:'#0E7C74'},
   rest:{ic:'moon-star',n:'En reposo',why:'Ninguna neurona de salida supera su umbral.',col:'#8C889B'},
 };
-const TH={GF:30,DNg11:15,MN9:20,MDN:40,AMARGO:12,AGUA:15,WALK:20};
+const TH={GF:30,DNg11:15,MN9:20,MDN:40,AMARGO:12,AGUA:6,WALK:20};
 const mx=k=>rates&&rates[k]?Math.max(rates[k].L,rates[k].R):0;
 const sum=k=>rates&&rates[k]?rates[k].L+rates[k].R:0;
 function decide(){
-  if(!rates)return 'rest';
+  if(!rates||saturated)return 'rest'; // saturado: las salidas no significan nada
   if(mx('GF')>TH.GF)return 'escape';
   if(mx('DNg11')>TH.DNg11)return 'groom';
   if(mx('MN9')>(behavior==='per'?TH.MN9*.5:TH.MN9))return 'per'; // histéresis: no parpadea con «Bebe agua» sobre azúcar
   if(mx('MDN')>TH.MDN)return 'back';
   if(mx('AMARGO_DN')>TH.AMARGO)return 'avoid';
-  if(mx('AGUA_DN')>TH.AGUA)return 'drink';
+  if(mx('AGUA_DN')>TH.AGUA&&Math.min(rates.AGUA_DN.L,rates.AGUA_DN.R)>3&&mx('MN9')<5)return 'drink'; // el azúcar también activa DNg67, pero de un solo lado y junto con MN9
   const wL=rates.DNa02.L+rates.DNa01.L+rates.P9.L,wR=rates.DNa02.R+rates.DNa01.R+rates.P9.R;
   if(wL+wR>TH.WALK)return 'walk';
+  if(nearestLight())return 'photo';
   return 'rest';
 }
+// luz del arenero más cercana que la mosca aún no alcanzó (los fotorreceptores reciben su señal)
+function nearestLight(){let best=null,bd=1e9;for(const s of placed)if(s.type==='luz'&&s.int>.05){const d=Math.hypot(s.x-fly.x,s.z-fly.z);if(d<bd){bd=d;best=s;}}
+  return best&&bd>1.3+1.2*best.int?best:null;}
 function updateFly(dt){
   let b=decide();
-  if(b==='escape'&&!fly.air&&fly.refr<=0){const ang=Math.random()*Math.PI*2,rr=2+Math.random()*(ARENA.R-4);fly.air={t:0,T:2.6,x0:fly.x,z0:fly.z,x1:Math.cos(ang)*rr,z1:Math.sin(ang)*rr};}
+  if(b==='escape'&&!fly.air&&fly.refr<=0){const snd=Math.max(sent['stim:sonido:L']||0,sent['stim:sonido:R']||0);fly.cause=loom?'Sombra':snd>0?'Sonido':'Fibra gigante';const ang=Math.random()*Math.PI*2,rr=2+Math.random()*(ARENA.R-4);fly.air={t:0,T:2.6,x0:fly.x,z0:fly.z,x1:Math.cos(ang)*rr,z1:Math.sin(ang)*rr};}
   if(fly.air){const A=fly.air;A.t+=dt;const u=Math.min(1,A.t/A.T),e=u*u*(3-2*u);fly.x=A.x0+(A.x1-A.x0)*e;fly.z=A.z0+(A.z1-A.z0)*e;
     if(u>.05)fly.h=Math.atan2(-(A.z1-A.z0),A.x1-A.x0);fly.y=Math.sin(Math.min(1,u*1.1)*Math.PI)*2.6;if(A.t>A.T){fly.air=null;fly.y=0;fly.refr=.5;}
     b=A.t<A.T*.12?'escape':'fly';}
@@ -114,6 +119,12 @@ function updateFly(dt){
     const v=Math.abs(dh)<1.2?1.4:.3; // primero gira para darle la espalda, luego camina
     fly.x+=Math.cos(fly.h)*v*dt;fly.z-=Math.sin(fly.h)*v*dt;fly.phase+=dt*(v*4.5+2);
     const r2=Math.hypot(fly.x,fly.z);if(r2>ARENA.R-.7){fly.x*=(ARENA.R-.7)/r2;fly.z*=(ARENA.R-.7)/r2;}}
+  if(b==='photo'){const L=nearestLight();if(L){const th=Math.atan2(-(L.z-fly.z),L.x-fly.x);const dh=((th-fly.h+Math.PI)%(2*Math.PI)+2*Math.PI)%(2*Math.PI)-Math.PI;
+    fly.h+=Math.max(-2.5*dt,Math.min(2.5*dt,dh));const v=Math.abs(dh)<1?.5+.9*L.int:.2;fly.x+=Math.cos(fly.h)*v*dt;fly.z-=Math.sin(fly.h)*v*dt;fly.phase+=dt*(v*4.5+2);}}
+  // la comida se acaba mientras la mosca la toca, más rápido si come o bebe (los retos usan fuentes que no se agotan)
+  if(contactStim&&!contactStim.inf&&(contactStim.type==='azucar'||contactStim.type==='agua')){const s=contactStim;s.int-=dt*(b==='per'||b==='drink'?.12:.06);ARENA.syncStim(s);
+    if(s.id===selId){const r=document.getElementById('popInt');r.value=Math.round(Math.max(0,s.int)*100);paintRange(r);document.getElementById('popO').textContent=r.value+'%';}
+    if(s.int<=.04){removeStim(s.id,true);log('stim',s.type==='azucar'?'Se acabó el azúcar':'Se acabó el agua',ST[s.type].col);}}
   const ease=(v,t,k)=>v+(t-v)*Math.min(1,dt*k);
   fly.per=ease(fly.per,b==='per'||b==='drink'?1:0,8);fly.groom=ease(fly.groom,b==='groom'?1:0,8);
 }
@@ -123,10 +134,11 @@ function chain(){
   const lbl=typeof LAB!=='undefined'?LAB.sourceShort():null;
   const sens=k=>Math.max(sent['stim:'+k+':L']||0,sent['stim:'+k+':R']||0);
   const b=behavior;
-  const src=lbl||(b==='escape'||b==='fly'?(sens('sonido')>0&&!loom?'Sonido':'Sombra'):b==='groom'?'Antenas':b==='per'?(contactType==='azucar'?'Azúcar':'Entrada'):b==='drink'?'Agua':b==='avoid'?'Amargo':null);
-  const key={escape:'GF',fly:'GF',groom:'DNg11',per:'MN9',back:'MDN',drink:'AGUA_DN',avoid:'AMARGO_DN',walk:null}[b];
+  const src=lbl||(b==='escape'||b==='fly'?(fly.cause||'Fibra gigante'):b==='groom'?'Antenas':b==='per'?(contactType==='azucar'?'Azúcar':'Entrada'):b==='drink'?'Agua':b==='avoid'?'Amargo':b==='photo'?'Luz':null);
+  const key={escape:'GF',fly:'GF',groom:'DNg11',per:'MN9',back:'MDN',drink:'AGUA_DN',avoid:'AMARGO_DN',walk:null,photo:null}[b];
   if(b==='rest')return [];
   const c=[];if(src)c.push({t:src,on:true});
+  if(b==='photo'){c.push({t:'fotorreceptores',on:true});c.push({t:'patas',on:true});return c;}
   if(b==='walk'){const wL=rates.DNa02.L+rates.DNa01.L+rates.P9.L,wR=rates.DNa02.R+rates.DNa01.R+rates.P9.R;c.push({t:'DNa02',on:true});c.push({t:wR>wL*1.3?'gira →':wL>wR*1.3?'← gira':'recto',on:true});}
   else{const kn={AGUA_DN:'DNg67',AMARGO_DN:'DNge067'}[key]||key;if(key&&!(src&&src.split(/[ ·]/)[0]===kn)&&!(src==='Fibra gigante'&&key==='GF'))c.push({t:kn,on:mx(key)>5});c.push({t:{escape:'salto',fly:'vuelo',groom:'patas',per:'probóscide',back:'patas',drink:'probóscide',avoid:'patas'}[b],on:true});}
   return c;
@@ -160,8 +172,8 @@ function doAntenna(ms){antT=simT+(ms||1500);log('stim','Antenas tocadas','#B07A3
 function setTool(t){tool=t;ARENA.setTool(t);if(t)select(null);dock.querySelectorAll('[data-t]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.t===t));
   const h=document.getElementById('hint');h.textContent='Clic para colocar · Esc para salir';h.style.opacity=t?1:0;}
 function updateBadges(){dock.querySelectorAll('[data-t]').forEach(b=>{const n=placed.filter(s=>s.type===b.dataset.t).length;const bd=b.querySelector('.badge2');bd.textContent=n;bd.classList.toggle('on',n>0);});}
-function placeStim(type,x,z,int,quiet){const s={id:pid++,type,x,z,int:int??.7};placed.push(s);ARENA.addStim(s);updateBadges();if(!quiet){log('stim',`${ST[type].n} colocado`,ST[type].col);tel('stim',{type:ST[type].n});}return s;}
-function removeStim(id){const s=placed.find(x=>x.id===id);placed=placed.filter(s=>s.id!==id);ARENA.removeStim(id);if(selId===id)select(null);updateBadges();if(s){log('stim',`${ST[s.type].n} quitado`,'#8C889B');tel('stim',{type:ST[s.type].n,on:false});}}
+function placeStim(type,x,z,int,quiet,inf){const s={id:pid++,type,x,z,int:int??.7,inf:!!inf};placed.push(s);ARENA.addStim(s);updateBadges();if(!quiet){log('stim',`${ST[type].n} colocado`,ST[type].col);tel('stim',{type:ST[type].n});}return s;}
+function removeStim(id,quiet){const s=placed.find(x=>x.id===id);placed=placed.filter(s=>s.id!==id);ARENA.removeStim(id);if(selId===id)select(null);updateBadges();if(s&&!quiet){log('stim',`${ST[s.type].n} quitado`,'#8C889B');tel('stim',{type:ST[s.type].n,on:false});}}
 function clearArena(){for(const s of placed.slice()){placed=placed.filter(x=>x!==s);ARENA.removeStim(s.id);}select(null);updateBadges();}
 function select(id){selId=id;ARENA.select(id);const p=document.getElementById('pop');const s=placed.find(x=>x.id===id);p.hidden=!s;
   if(s){const S=ST[s.type];document.getElementById('popT').innerHTML=`<span style="color:${S.col}">${icon(S.ic)}</span>${S.n}`;const r=document.getElementById('popInt');r.value=Math.round(s.int*100);paintRange(r);document.getElementById('popO').textContent=Math.round(s.int*100)+'%';}}
@@ -240,6 +252,7 @@ document.addEventListener('click',e=>{if(!e.target.closest('.popover,.menu,#simB
 document.getElementById('mAbout').onclick=()=>{document.getElementById('about').hidden=false;document.getElementById('menu').hidden=true;};
 document.getElementById('aboutOk').onclick=()=>document.getElementById('about').hidden=true;
 document.getElementById('mKeys').onclick=()=>{document.getElementById('menu').hidden=true;openDrawer('con');CONSOLE.run('atajos');};
+document.getElementById('mTour').onclick=()=>{document.getElementById('menu').hidden=true;TOUR.start();};
 document.getElementById('mReset').onclick=()=>{document.getElementById('menu').hidden=true;LEARN.resetProgress();};
 
 /* ============ cajón inferior ============ */
@@ -281,7 +294,7 @@ function drawTraces(){const w=tc.width/dpr,h=tc.height/dpr;tctx.setTransform(dpr
   TR.forEach(([k,n,c],j)=>{tctx.strokeStyle=c;tctx.lineWidth=2;tctx.lineJoin='round';tctx.beginPath();hist.forEach((s,i)=>{const x=X(s.t),y=B-s[k]/top*(B-T);i?tctx.lineTo(x,y):tctx.moveTo(x,y);});tctx.stroke();
     const last=hist.length?hist[hist.length-1][k]:0;tctx.fillStyle=c;tctx.font='600 12px '+FF;tctx.textAlign='left';tctx.textBaseline='middle';const y=T+8+j*((B-T-8)/TR.length);
     tctx.beginPath();tctx.arc(R0+14,y,4,0,7);tctx.fill();tctx.fillStyle=C.t2;tctx.fillText(`${n} ${Math.round(last)}`,R0+24,y);});}
-const ec=document.getElementById('ethoCv'),ectx=ec.getContext('2d');const ETH=['escape','fly','groom','per','drink','avoid','back','walk','rest'];let etho=[];
+const ec=document.getElementById('ethoCv'),ectx=ec.getContext('2d');const ETH=['escape','fly','groom','per','drink','avoid','back','walk','photo','rest'];let etho=[];
 function drawEtho(){const w=ec.width/dpr,h=ec.height/dpr;ectx.setTransform(dpr,0,0,dpr,0,0);ectx.clearRect(0,0,w,h);const L0=170,R0=w-10,T=4,B=h-20,rh=(B-T)/ETH.length;
   ectx.font='500 12.5px '+FF;ectx.textBaseline='middle';const span=30000;
   ETH.forEach((b,k)=>{const y=T+k*rh;ectx.fillStyle=C.t2;ectx.textAlign='right';ectx.fillText(BEH[b].n,L0-10,y+rh/2);ectx.fillStyle=C.s3;ectx.fillRect(L0,y+3,R0-L0,rh-6);ectx.fillStyle=BEH[b].col;
@@ -291,7 +304,7 @@ const visible=id=>{const e=document.getElementById(id);return e&&e.offsetParent!
 
 /* ============ ciclo ============ */
 function onReady(m){const ld=document.getElementById('loading');ld.style.transition='opacity .3s';ld.style.opacity=0;setTimeout(()=>ld.remove(),300);
-  LAB.init();LEARN.init();CONSOLE.init();if(typeof COMP!=='undefined')COMP.init();resizeAll();}
+  LAB.init();LEARN.init();CONSOLE.init();if(typeof COMP!=='undefined')COMP.init();resizeAll();if(typeof TOUR!=='undefined')TOUR.maybeStart();}
 let markSig='';
 function onTick(m){
   const dt=Math.max(0,(m.t-simT)/1000);simT=m.t;speed=m.speed;
@@ -305,13 +318,15 @@ function onTick(m){
   document.getElementById('sSpeed').textContent=sp;document.getElementById('pSpeed').textContent=sp;
   document.getElementById('sT').textContent=fmt(simT/1000,1)+' s';document.getElementById('pT').textContent=fmt(simT/1000,1)+' s';
   document.getElementById('sAct').textContent=fmt(nAct);document.getElementById('sSpk').textContent=fmt(total);
-  let drv=0;if(META&&META.stim.luz){const g=META.stim.luz;for(const k of ['stim:luz:L','stim:luzlab:L'])if(sent[k]>0){drv+=g.L.length;break;}for(const k of ['stim:luz:R','stim:luzlab:R'])if(sent[k]>0){drv+=g.R.length;break;}}
-  const hyper=nAct-drv>5000; // los fotorreceptores estimulados por luz no cuentan como hiperactividad
-  const ban=document.getElementById('banner');if(ban.hidden===hyper){ban.hidden=!hyper;if(hyper)log('warn','Hiperactividad: el modelo se saturó','#F5A524');}
+  // el worker vigila la saturación (actividad recurrente que se mantiene sola) y la reinicia si dura
+  saturated=!!m.sat;if(m.satReset)log('warn','Hiperactividad: el modelo se saturó y se reinició la actividad','#F5A524');
+  if(saturated||m.satReset)satUntil=simT+1500; // el aviso se queda un momento para no parpadear
+  const hyper=simT<satUntil;
+  const ban=document.getElementById('banner');if(ban.hidden===hyper)ban.hidden=!hyper;
   renderPill();
 }
 function frame(){
-  const pose={phase:fly.phase,walk:behavior==='walk'||behavior==='back'||behavior==='avoid',groom:fly.groom,per:fly.per,song:0,songSide:1,flap:fly.air&&fly.air.t>fly.air.T*.06?1:0,tuck:fly.air?Math.min(1,fly.air.t*3,(fly.air.T-fly.air.t)*3):0,jump:fly.air?Math.max(0,1-fly.air.t*6):0};
+  const pose={phase:fly.phase,walk:behavior==='walk'||behavior==='back'||behavior==='avoid'||behavior==='photo',groom:fly.groom,per:fly.per,song:0,songSide:1,flap:fly.air&&fly.air.t>fly.air.T*.06?1:0,tuck:fly.air?Math.min(1,fly.air.t*3,(fly.air.T-fly.air.t)*3):0,jump:fly.air?Math.max(0,1-fly.air.t*6):0};
   const lk=loom?Math.min(1,(simT-loom.t0)/900):null;
   ARENA.frame({fly:{x:fly.x,y:fly.y,z:fly.z,heading:fly.h,pitch:-.12*fly.groom+(fly.air?-.1:0),pose},loom:lk,dust:0,stims:placed});
   const s=placed.find(x=>x.id===selId);if(s){const p=ARENA.screenPos(s.x,1.2,s.z),pop=document.getElementById('pop');pop.style.left=p.x+'px';pop.style.top=p.y+'px';}

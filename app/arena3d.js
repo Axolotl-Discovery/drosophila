@@ -154,6 +154,7 @@ function removeStim(id){const o=stimObjs.get(id);if(!o)return;scene.remove(o.gro
 function syncStim(s){const o=stimObjs.get(s.id);if(!o)return;o.group.position.set(s.x,0,s.z);
   const k=s.int;if(o.parts.pl){o.parts.pl.intensity=.5+1.6*k;o.parts.halo.scale.setScalar(1.4+1.8*k);o.parts.pool.scale.setScalar(.6+.8*k);}
   if(o.parts.cloud)o.parts.cloud.scale.setScalar(.6+.8*k);
+  if(o.parts.drop){const q=.3+.7*Math.sqrt(Math.max(0,Math.min(1,k)));o.parts.drop.scale.set(q,.35*q,q);} // la gota se encoge al comerla
   if(o.parts.fly)o.group.rotation.y=s.rot||0;}
 
 /* ---------- init ---------- */
