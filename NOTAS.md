@@ -10,6 +10,11 @@ Simulador del cerebro completo de *Drosophila* (conectoma FlyWire v783, modelo d
 
 **Mac:** doble clic en el .zip y arrastra `Drosophila.app` a Aplicaciones. La primera vez macOS la bloquea porque no está notarizada: en macOS 15 ve a *Ajustes del Sistema → Privacidad y seguridad → Abrir de todos modos*; en versiones anteriores, clic derecho → *Abrir*. Más detalles en `LEEME.txt` dentro del .zip.
 
+### Novedades de la 4.3.1
+- **Agua y amargo ya hacen algo:** con agua la mosca extiende la probóscide para beber; con amargo la rechaza y se aleja. Antes la mosca se quedaba sin reaccionar.
+- **Luces selectivas:** cada opsina responde a su color (CsChrimson a rojo y ámbar, ChR2 a azul intenso, GtACR1 a verde, GtACR2 a azul). El cruce entre colores solo aparece con la luz al máximo (3 mW/mm²), como en el laboratorio.
+- **Aviso de saturación:** vuelve a aparecer el aviso cuando el modelo se satura (por ejemplo con vinagre o CO₂ fuertes, que hacen girar a la mosca en círculos).
+
 ### Novedades de la 4.3
 - **Más realista:** cada opsina responde según su espectro real (CsChrimson con pico en ~590 nm, ChR2 ~470, GtACR1 ~515, GtACR2 ~470) y la luz se mide en µW/mm². ChR2 necesita luz azul intensa, GtACR1 silencia con muy poca luz y la mosca ve el azul y el verde (aparece un aviso cuando ve la luz).
 - **Retinal (ATR):** sin retinal en la comida ninguna opsina funciona, como en el laboratorio.
