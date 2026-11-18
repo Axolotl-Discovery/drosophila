@@ -10,6 +10,15 @@ Simulador del cerebro completo de *Drosophila* (conectoma FlyWire v783, modelo d
 
 **Mac:** doble clic en el .zip y arrastra `Drosophila.app` a Aplicaciones. La primera vez macOS la bloquea porque no está notarizada: en macOS 15 ve a *Ajustes del Sistema → Privacidad y seguridad → Abrir de todos modos*; en versiones anteriores, clic derecho → *Abrir*. Más detalles en `LEEME.txt` dentro del .zip.
 
+### Novedades de la 4.4
+- **Tutorial de bienvenida:** la primera vez que abres la app te muestra los botones y te guía en un experimento corto con azúcar. Puedes repetirlo desde el menú *⋯ → Ver tutorial*.
+- **Lecciones encadenadas:** al aprobar una lección aparece «✓ Completada» y un botón te lleva directo a la siguiente. Los quizzes necesitan 60 % de aciertos para aprobar.
+- **Instalación nueva, progreso nuevo:** si borras la app y la vuelves a descargar, empiezas desde cero (también al instalar una versión nueva).
+- **El modelo ya no se queda ciclado:** si la actividad se satura y se mantiene sola, la app la detecta y la reinicia; mientras tanto la mosca no se mueve y aparece un aviso.
+- **Sonido y sombra:** la píldora de conducta ya no confunde el salto por sonido con el de la sombra.
+- **Luz del arenero:** la mosca camina hacia la luz (fototaxis).
+- **La comida se acaba:** el azúcar y el agua se gastan mientras la mosca come o bebe, y la gota se encoge hasta desaparecer.
+
 ### Novedades de la 4.3.1
 - **Agua y amargo ya hacen algo:** con agua la mosca extiende la probóscide para beber; con amargo la rechaza y se aleja. Antes la mosca se quedaba sin reaccionar.
 - **Luces selectivas:** cada opsina responde a su color (CsChrimson a rojo y ámbar, ChR2 a azul intenso, GtACR1 a verde, GtACR2 a azul). El cruce entre colores solo aparece con la luz al máximo (3 mW/mm²), como en el laboratorio.
