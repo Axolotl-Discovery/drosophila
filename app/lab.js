@@ -12,7 +12,10 @@ const LIGHTS=[
   {k:'azul',n:'Azul',nm:470,c:'#3E63DD',vis:1},
 ];
 /* Opsinas. s: espectro de acción relativo a su pico, muestreado en las 4 longitudes de onda.
-   ec50: irradiancia efectiva (µW/mm²) para media respuesta; respuesta = E/(E+ec50), E = Σ s·I.
+   ec50: irradiancia efectiva (µW/mm²) para media respuesta; respuesta = E²/(E²+ec50²), E = Σ s·I.
+   La curva es sigmoidea (Hill n=2): por debajo del umbral la fotocorriente no basta para cambiar el disparo,
+   así que cada opsina solo responde a su color. Solo a la irradiancia máxima (3 mW/mm²) aparece el cruce
+   entre colores que se ve en el laboratorio (p. ej. CsChrimson con azul o verde muy intensos).
    Valores aproximados de la literatura:
    CsChrimson pico ~590 nm, responde también al verde y algo al azul (Klapoetke y col. 2014, doi:10.1038/nmeth.2836).
    ChR2 pico ~470 nm, poca corriente: en moscas necesita mucha luz.
@@ -20,10 +23,10 @@ const LIGHTS=[
    (Govorunova y col. 2015; Mohammad y col. 2017, doi:10.1038/nmeth.4148).
    Todas necesitan retinal (ATR) en la comida: la mosca no fabrica suficiente. */
 const OPSINS={
-  CsChrimson:{n:'CsChrimson',act:true,pk:590,ec50:50,d:'Canal de cationes (pico ~590 nm). Se usa con luz roja porque la mosca casi no la ve, aunque también responde al ámbar, al verde y algo al azul.',s:{rojo:.65,ambar:1,verde:.6,azul:.4}},
-  ChR2:{n:'ChR2',act:true,pk:470,ec50:4000,d:'Canalrodopsina-2 (pico ~470 nm). Poca corriente: en moscas necesita luz azul intensa, y la mosca ve el azul.',s:{rojo:0,ambar:.03,verde:.3,azul:1}},
-  GtACR1:{n:'GtACR1',act:false,pk:515,ec50:3,d:'Canal de cloruro (pico ~515 nm). Con muy poca luz verde o azul silencia a la neurona.',s:{rojo:.003,ambar:.25,verde:1,azul:.7}},
-  GtACR2:{n:'GtACR2',act:false,pk:470,ec50:8,d:'Canal de cloruro (pico ~470 nm). Silencia con luz azul; también algo con verde.',s:{rojo:0,ambar:.05,verde:.45,azul:1}},
+  CsChrimson:{n:'CsChrimson',act:true,pk:590,ec50:60,d:'Canal de cationes (pico ~590 nm). Responde a la luz roja y ámbar; la roja se prefiere porque la mosca casi no la ve. Solo con verde o azul muy intensos (3 mW/mm²) se activa un poco.',s:{rojo:.7,ambar:1,verde:.03,azul:.03}},
+  ChR2:{n:'ChR2',act:true,pk:470,ec50:700,d:'Canalrodopsina-2 (pico ~470 nm). Solo responde al azul, y con poca corriente: en moscas necesita luz azul intensa, y la mosca ve el azul.',s:{rojo:0,ambar:0,verde:0,azul:1}},
+  GtACR1:{n:'GtACR1',act:false,pk:515,ec50:20,d:'Canal de cloruro (pico ~515 nm). Con poca luz verde silencia a la neurona. Solo con azul o ámbar muy intensos responde algo.',s:{rojo:0,ambar:.01,verde:1,azul:.012}},
+  GtACR2:{n:'GtACR2',act:false,pk:470,ec50:15,d:'Canal de cloruro (pico ~470 nm). Silencia con luz azul; no responde a los demás colores.',s:{rojo:0,ambar:0,verde:.004,azul:1}},
 };
 const I_MIN=1,I_MAX=3000;
 const LAB=(()=>{
@@ -52,8 +55,8 @@ const LAB=(()=>{
     worker.postMessage({type:'watch',key:'*clear*',prefix:'c',list:[]});
     for(const c of constructs)if(c.list.length)worker.postMessage({type:'watch',key:'c'+c.id,list:c.list.slice(0,4000)});}
   // respuesta 0–1 de una construcción a las luces encendidas
-  const resp=c=>{if(!retinal)return 0;const O=OPSINS[c.opsin];let E=0;for(const L of LIGHTS)if(lights[L.k])E+=O.s[L.k]*intensity;return E/(E+O.ec50);};
-  const TH_ACT=.15,TH_SIL=.5; // por debajo de TH_ACT la fotocorriente no alcanza para hacer disparar a la neurona
+  const resp=c=>{if(!retinal)return 0;const O=OPSINS[c.opsin];let E=0;for(const L of LIGHTS)if(lights[L.k])E+=O.s[L.k]*intensity;return E*E/(E*E+O.ec50*O.ec50);};
+  const TH_ACT=.3,TH_SIL=.5; // por debajo de TH_ACT la fotocorriente no alcanza para hacer disparar a la neurona
   function applySilence(want){const on=[],off=[];for(const i of want)if(!silencedNow.has(i))on.push(i);for(const i of silencedNow)if(!want.has(i))off.push(i);
     if(on.length)worker.postMessage({type:'silence',list:on,on:true});if(off.length)worker.postMessage({type:'silence',list:off,on:false});
     silencedNow.clear();for(const i of want)silencedNow.add(i);}

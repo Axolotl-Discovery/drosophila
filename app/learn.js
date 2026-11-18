@@ -38,13 +38,13 @@ const LEARN=(()=>{
      hint:'Neuronas, opsina y color parecen correctos. ¿Qué necesita la opsina, además de luz, para funcionar?',goal:{kind:'hold',beh:'back',ms:500,setup:'sinATR'},
      explain:'Sin retinal (ATR) en la comida la opsina no capta luz. Revisar los controles antes de cambiar la hipótesis es parte del método.'},
     {id:'q2',type:'quiz',ic:'circle-help',title:'Colores y opsinas',xp:15,qs:[
-      ['Pusiste CsChrimson en MDN y encendiste luz azul intensa. ¿Qué esperas?',['Retrocede, pero la mosca también ve la luz y el resultado es ambiguo','Nada, CsChrimson ignora el azul','Retrocede igual que con rojo, sin ningún problema'],0,'CsChrimson también responde al azul, aunque menos. El problema es que la mosca ve el azul: ya no sabes si la conducta es por la opsina o por la vista.'],
+      ['Pusiste CsChrimson en MDN y encendiste luz azul intensa. ¿Qué esperas?',['Retrocede, pero la mosca también ve la luz y el resultado es ambiguo','Nada, CsChrimson ignora el azul','Retrocede igual que con rojo, sin ningún problema'],0,'CsChrimson casi no absorbe el azul, pero con azul muy intenso (3 mW/mm²) sí se activa. El problema es que la mosca ve el azul: ya no sabes si la conducta es por la opsina o por la vista.'],
       ['¿Qué luz enciende ChR2?',['Azul','Roja','Infrarroja'],0,'ChR2 se activa con azul, pero la mosca también ve el azul, y eso complica el experimento.'],
       ['Una neurona de comando es…',['Una neurona que por sí sola desencadena una conducta completa','Cualquier motoneurona','Una neurona sensorial'],0,'GF, MDN y MN9 son ejemplos.']]},
    ]},
    {t:'Silenciar neuronas',c:'#6A4FC9',cp:'#4E38A0',ls:[
     {id:'t3',type:'teoria',ic:'book-open',title:'Apagar con luz',xp:10,cards:[
-      ['zap-off','GtACR1: el freno','GtACR1 es un canal de cloruro (pico ~515 nm). Con muy poca luz verde o azul deja pasar cloruro y la neurona ya no puede disparar. Pero la mosca sí ve el verde: siempre compara contra moscas sin retinal. En este modelo, una neurona silenciada pierde todas sus sinapsis, igual que en Shiu y col. (2024).'],
+      ['zap-off','GtACR1: el freno','GtACR1 es un canal de cloruro (pico ~515 nm). Con poca luz verde deja pasar cloruro y la neurona ya no puede disparar. Pero la mosca sí ve el verde: siempre compara contra moscas sin retinal. En este modelo, una neurona silenciada pierde todas sus sinapsis, igual que en Shiu y col. (2024).'],
       ['microscope','Suficiente o necesaria','Si activar una neurona produce la conducta, la neurona es suficiente. Si silenciarla impide la conducta ante el estímulo natural, es necesaria. Las dos pruebas juntas dicen mucho más que una sola.']]},
     {id:'r4',type:'reto',ic:'zap-off',title:'Sin salto rápido',xp:25,brief:'Una sombra se acercará varias veces. Evita el salto rápido de escape en dos sombras seguidas.',allow:null,
      hint:'¿Qué neurona disparaste en «Botón de escape»? Ahora piensa al revés: ¿qué opsina apaga y con qué color?',goal:{kind:'prevent',beh:['escape','fly'],ev:'loom',n:2,needSil:true,maxN:6},
