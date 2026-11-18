@@ -10,6 +10,12 @@ Simulador del cerebro completo de *Drosophila* (conectoma FlyWire v783, modelo d
 
 **Mac:** doble clic en el .zip y arrastra `Drosophila.app` a Aplicaciones. La primera vez macOS la bloquea porque no está notarizada: en macOS 15 ve a *Ajustes del Sistema → Privacidad y seguridad → Abrir de todos modos*; en versiones anteriores, clic derecho → *Abrir*. Más detalles en `LEEME.txt` dentro del .zip.
 
+### Novedades de la 4.4.1
+- **Los olores ya no saturan el modelo:** muchas interneuronas locales del lóbulo antenal tenían sinapsis excitadoras aunque su neurotransmisor predicho es inhibidor (GABA, glutamato, serotonina o dopamina). Ahora son inhibidoras, como en la mosca real. Una gota de vinagre activa unas 1 700 neuronas en vez de 10 000, y la actividad se apaga sola al quitarla. Las demás vías y los retos no cambian.
+- **El modelo ya no se queda ciclado:** si no hay ningún estímulo y la actividad sigue sola más de 1 segundo, se reinicia.
+- **Vinagre y CO₂:** la mosca camina hacia el vinagre y se aleja del CO₂.
+- **Reinstalar borra el progreso de verdad:** la 4.4.0 no siempre detectaba que la app se había vuelto a descargar.
+
 ### Novedades de la 4.4
 - **Tutorial de bienvenida:** la primera vez que abres la app te muestra los botones y te guía en un experimento corto con azúcar. Puedes repetirlo desde el menú *⋯ → Ver tutorial*.
 - **Lecciones encadenadas:** al aprobar una lección aparece «✓ Completada» y un botón te lleva directo a la siguiente. Los quizzes necesitan 60 % de aciertos para aprobar.
