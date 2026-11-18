@@ -23,4 +23,4 @@ Probar en el navegador: `cd app && python3 -m http.server 8765` y abrir http://l
 2. `git tag v4.2.0 && git push origin v4.2.0`, o en GitHub: *Actions → Publicar versión → Run workflow* con la etiqueta.
 
 ## Créditos
-Ver `app/CREDITOS.txt`. Datos de FlyWire (CC-BY 4.0) y del repositorio philshiu/Drosophila_brain_model (MIT).
+El código se publica con licencia MIT (ver `LICENSE`). Ver también `app/CREDITOS.txt`. Datos de FlyWire (CC-BY 4.0) y del repositorio philshiu/Drosophila_brain_model (MIT).
